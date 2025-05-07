@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mvd Doc Search Minus</title>
+</head>
+<body>
+<button id="buildIndex">Build Index</button><br><br>
+<input type="search" id="searchQuery"><br>
+<h4>Search result: </h4>
+<div id="searchResult"></div>
+<script>
+const resultEl = document.getElementById('searchResult');
+document.getElementById('searchQuery').addEventListener('keyup', (e) => {
+  if (e.keyCode === 13) {
+    if (e.target.value != '') {
+    e.preventDefault();
+      resultEl.innerHTML = Android.doSearch(e.target.value);
+    }
+  }
+});
+
+document.getElementById('buildIndex').addEventListener('click', (e) => {
+    console.log('bild index button clicked');
+    resultEl.innerHTML = Android.doIndex();
+});
+</script>
+</body>
+</html>
