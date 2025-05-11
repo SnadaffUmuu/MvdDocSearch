@@ -1,10 +1,13 @@
 package com.mvd.docsearchmvd.search;
 
+import com.mvd.docsearchmvd.WebAppInterface;
 import com.mvd.docsearchmvd.db.DatabaseManager;
 import java.sql.SQLException;
 import java.util.*;
 import java.util.stream.Collectors;
 import static com.mvd.docsearchmvd.util.Util.isAsciiLetterOrCyrillicOrDigit;
+
+import android.util.Log;
 
 public class SearchEngine {
     private DatabaseManager db;
@@ -15,7 +18,7 @@ public class SearchEngine {
 
     public List<Hit> search(String query) throws SQLException {
 
-        System.out.println("[INFO] Поиск по запросу: \"" + query + "\"");
+        Log.d(WebAppInterface.TAG, "Searching text: " + query);
 
         List<String> queryTokens = new ArrayList<>();
         int pos = 0;
@@ -77,7 +80,8 @@ public class SearchEngine {
 
             if (matched) {
                 int hitCount = base.size(); // столько раз фраза встретилась в файле
-                result.add(new Hit(fileId, hitCount));
+                String path = db.getFilePath(fileId);
+                result.add(new Hit(fileId, path, hitCount));
             }
         }
 

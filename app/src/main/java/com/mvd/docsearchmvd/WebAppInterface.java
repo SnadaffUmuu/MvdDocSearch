@@ -5,13 +5,14 @@ import android.net.Uri;
 import android.webkit.JavascriptInterface;
 import android.util.Log;
 
-import androidx.documentfile.provider.DocumentFile;
-
 import com.mvd.docsearchmvd.db.DatabaseManager;
 import com.mvd.docsearchmvd.indexer.FileIndexer;
 import com.mvd.docsearchmvd.search.Hit;
 import com.mvd.docsearchmvd.search.SearchEngine;
 
+import com.google.gson.Gson;
+
+import java.io.File;
 import java.io.StringWriter;
 import java.io.PrintWriter;
 import java.util.List;
@@ -24,29 +25,30 @@ public class WebAppInterface {
     }
     @JavascriptInterface
     public String doSearch(String query) {
-        String result = "";
         try {
+            Log.d(TAG, "doSearch called");
             DatabaseManager db = new DatabaseManager(context);
             SearchEngine se = new SearchEngine(db);
             List<Hit> results = se.search(query);
-            for (Hit hit : results) {
-                result += hit.fileId + ": " + hit.hits + "<br>";
-            }
-            return result;
+            Log.d(TAG, "results num: " + results.size());
+            Gson gson = new Gson();
+            String json = gson.toJson(results);
+            Log.d(TAG, "results json: " + json);
+            return json;
         } catch (Exception e) {
             return "Произошла ошибка поиска";
         }
     }
 
     @JavascriptInterface
-    public String doIndex() {
+    public String doIndex(String path) {
         try {
             Log.d(TAG, "doIndex called");
-            Uri folderUri = getFolderUri();
-            if (folderUri == null) {
-                return "Index source folder uri not found in the App's preferences";
-            };
-            DocumentFile folder = DocumentFile.fromTreeUri(context, folderUri);
+            File folder = new File(path);
+            Log.d(TAG, "Path: " + path);
+            Log.d(TAG, "Can read: " + folder.canRead());
+            Log.d(TAG, "Exists: " + folder.exists());
+            Log.d(TAG, "IsDirectory: " + folder.isDirectory());
             if (folder == null || !folder.exists() || !folder.isDirectory()) return "Invalid folder.";
 
             DatabaseManager db = new DatabaseManager(context);
@@ -54,10 +56,10 @@ public class WebAppInterface {
 
             FileIndexer fileIndexer = new FileIndexer(db, context);
 
-            DocumentFile[] folders = new DocumentFile[] { folder };
+            File[] folders = new File[] { folder };
             fileIndexer.updateIndex(folders);
 
-            return "Индекс " + folderUri.getPath() + "успешно завершен";
+            return "Индекс " + path + "успешно завершен";
         } catch (Exception e) {
             StringWriter sw = new StringWriter();
             e.printStackTrace(new PrintWriter(sw));
@@ -65,47 +67,14 @@ public class WebAppInterface {
         }
     }
 
+    @JavascriptInterface
+    public void selectFolder() {
+        ((MainActivity) context).selectFolder();
+    }
+
     private Uri getFolderUri() {
         SharedPreferences prefs = context.getSharedPreferences("docsearchmvd_prefs", Context.MODE_PRIVATE);
         String uriString = prefs.getString("folder_uri", null);
         return uriString != null ? Uri.parse(uriString) : null;
     }
-
-    /*
-
-Intent intent = new Intent(Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION);
-startActivity(intent);
-
-
-Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT_TREE);
-intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION |
-                Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION |
-                Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
-startActivityForResult(intent, REQUEST_CODE_PICK_FOLDER);
-
-    * */
-
-    /*
-    @Override
-protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-    if (requestCode == REQUEST_CODE_PICK_FOLDER && resultCode == Activity.RESULT_OK) {
-        Uri treeUri = data.getData();
-
-        // Сохраняем постоянные права
-        getContentResolver().takePersistableUriPermission(treeUri,
-            Intent.FLAG_GRANT_READ_URI_PERMISSION |
-            Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
-
-        // Преобразуем в DocumentFile и сохраняем в базе/конфиге
-        DocumentFile pickedDir = DocumentFile.fromTreeUri(this, treeUri);
-        // Далее — добавить в список путей и проиндексировать
-    }
-}
-3. Хранение путей
-Сохраняйте treeUri.toString() в базе или настройках. Это и будет уникальный идентификатор папки.
-
-4. Повторное использование в будущем
-    Uri uri = Uri.parse(savedUriString);
-    DocumentFile dir = DocumentFile.fromTreeUri(context, uri);
-    * */
 }

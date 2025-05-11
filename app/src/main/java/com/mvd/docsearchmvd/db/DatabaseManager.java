@@ -11,9 +11,11 @@ import androidx.documentfile.provider.DocumentFile;
 import com.mvd.docsearchmvd.WebAppInterface;
 
 import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.util.*;
 
 public class DatabaseManager {
@@ -38,7 +40,6 @@ public class DatabaseManager {
         db.execSQL("CREATE TABLE IF NOT EXISTS files(" +
                 "id INTEGER PRIMARY KEY, " +
                 "path TEXT UNIQUE NOT NULL, " +
-                "display_path TEXT NOT NULL, " +
                 "size INTEGER NOT NULL, " +
                 "last_modified INTEGER NOT NULL);");
 
@@ -56,10 +57,9 @@ public class DatabaseManager {
                 }
     }
 
-    public String updateFileMetadata(DocumentFile file) throws IOException {
+    public String updateFileMetadata(File file) throws IOException {
         Log.d(WebAppInterface.TAG, "updateFileMetadata");
-        String filePath = file.getUri().toString();
-        String displayPath = buildRelativePath(file);
+        String filePath = file.getAbsolutePath();
         long fileSize = file.length();
         long lastModified = file.lastModified();
 
@@ -81,23 +81,22 @@ public class DatabaseManager {
                     stmt.bindLong(2, lastModified);
                     stmt.bindString(3, filePath);
                     stmt.executeUpdateDelete();
-                    Log.d(WebAppInterface.TAG, "[INFO] Обновление файла: " + displayPath);
-                    return readFileContent(file);
+                    Log.d(WebAppInterface.TAG, "[INFO] Обновление файла: " + filePath);
+                    return new String(Files.readAllBytes(file.toPath()), StandardCharsets.UTF_8);
                 } else {
                     return null;
                 }
             } else {
                 // Если файл новый, добавляем запись
-                String insertSql = "INSERT INTO files (path, display_path, size, last_modified) VALUES (?, ?, ?, ?)";
+                String insertSql = "INSERT INTO files (path, size, last_modified) VALUES (?, ?, ?)";
                 SQLiteStatement stmt = db.compileStatement(insertSql);
                 stmt.bindString(1, filePath);
-                stmt.bindString(2, displayPath);
-                stmt.bindLong(3, fileSize);
-                stmt.bindLong(4, lastModified);
+                stmt.bindLong(2, fileSize);
+                stmt.bindLong(3, lastModified);
                 stmt.executeInsert();
 
-                Log.d(WebAppInterface.TAG, "[INFO] Новый файл: " + displayPath);
-                return readFileContent(file);
+                Log.d(WebAppInterface.TAG, "[INFO] Новый файл: " + filePath);
+                return new String(Files.readAllBytes(file.toPath()), StandardCharsets.UTF_8);
             }
         } finally {
             cursor.close();
@@ -118,11 +117,25 @@ public class DatabaseManager {
         }
     }
 
+    public String getFilePath(int fileId) {
+        Cursor cursor = db.rawQuery("SELECT path FROM files WHERE id = ?", new String[]{String.valueOf(fileId)});
+        try {
+            if (cursor.moveToFirst()) {
+                return cursor.getString(0);
+            } else {
+                throw new RuntimeException("Файл не найден в таблице files: " + fileId);
+            }
+        } finally {
+            cursor.close();
+        }
+    }
+
     public Map<Integer, List<Integer>> getFilesWithPositions(String query) {
         Map<Integer, List<Integer>> result = new HashMap<>();
         Cursor cursor = db.rawQuery(
                 "SELECT t.file_id, t.positions " +
-                        "FROM tokens t JOIN dict d ON t.token_id = d.id " +
+                        "FROM tokens t " +
+                        "JOIN dict d ON t.token_id = d.id " +
                         "WHERE d.token = ? ORDER BY t.file_id",
                 new String[]{query});
 
@@ -147,42 +160,4 @@ public class DatabaseManager {
         return result;
     }
 
-    private boolean indexNotExists(String indexName) {
-        Cursor cursor = db.rawQuery(
-                "SELECT 1 FROM sqlite_master WHERE type = 'index' AND name = ?",
-                new String[]{indexName});
-        try {
-            return !cursor.moveToFirst();
-        } finally {
-            cursor.close();
-        }
-    }
-
-    private String buildRelativePath(DocumentFile file) {
-        List<String> parts = new ArrayList<>();
-        DocumentFile current = file;
-        while (current != null && current.getName() != null) {
-            parts.add(current.getName());
-            current = current.getParentFile();  // Может вернуть null
-        }
-        Collections.reverse(parts);
-        return String.join("/", parts);  // → Review/vocab/sample.txt
-    }
-
-    private String readFileContent(DocumentFile file) throws IOException {
-        InputStream in = context.getContentResolver().openInputStream(file.getUri());
-        if (in == null) throw new IOException("Cannot open input stream for file: " + file.getUri());
-        byte[] bytes = readAllBytes(in);
-        return new String(bytes, StandardCharsets.UTF_8);
-    }
-
-    private byte[] readAllBytes(InputStream input) throws IOException {
-        ByteArrayOutputStream buffer = new ByteArrayOutputStream();
-        byte[] data = new byte[4096];
-        int nRead;
-        while ((nRead = input.read(data)) != -1) {
-            buffer.write(data, 0, nRead);
-        }
-        return buffer.toByteArray();
-    }
 }

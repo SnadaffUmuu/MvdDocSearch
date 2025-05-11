@@ -37,16 +37,16 @@ public class FileIndexer {
         this.dict = new TokenDictionary(conn);
     }
 
-    private boolean isAllowedExtension(DocumentFile file) {
+    private boolean isAllowedExtension(File file) {
         String name = file.getName().toLowerCase();
         return Arrays.stream(extensions).anyMatch(name::endsWith);
     }
 
-    private void indexFile(DocumentFile file, String content) {
+    private void indexFile(File file, String content) {
         Log.d(WebAppInterface.TAG, "indexFile");
 
         int fileId;
-        fileId = db.getFileId(file.getUri().toString());
+        fileId = db.getFileId(file.getAbsolutePath());
 
         List<Token> tokens = tokenizer.tokenize(content);
 
@@ -69,7 +69,7 @@ public class FileIndexer {
         stmt.close();
     }
 
-    public void indexFileIfNeeded(DocumentFile file) throws SQLException, IOException {
+    public void indexFileIfNeeded(File file) throws SQLException, IOException {
         Log.d(WebAppInterface.TAG, "indexFileIfNeeded");
         String content = db.updateFileMetadata(file);
         if (content != null) {
@@ -77,13 +77,13 @@ public class FileIndexer {
         }
     }
 
-    public void indexFilesInDirectory(DocumentFile folder) throws SQLException, IOException {
+    public void indexFilesInDirectory(File folder) throws SQLException, IOException {
         Log.d(WebAppInterface.TAG, "indexFilesInDirectory");
         Log.d(WebAppInterface.TAG, folder.getName());
         if (folder.isDirectory()) {
-            DocumentFile[] files = folder.listFiles();
+            File[] files = folder.listFiles();
             if (files == null) return;
-            for (DocumentFile file : files) {
+            for (File file : files) {
                 indexFilesInDirectory(file);
             }
         } else if (folder.isFile() && folder.canRead()) {
@@ -97,12 +97,12 @@ public class FileIndexer {
         }
     }
 
-    public void updateIndex(DocumentFile[] folders) throws IOException, SQLException {
+    public void updateIndex(File[] folders) throws IOException, SQLException {
         Log.d(WebAppInterface.TAG, "updateIndex");
         conn.beginTransaction();
         try {
-            for (DocumentFile dir : folders) {
-                Log.d(WebAppInterface.TAG, dir.getUri().toString());
+            for (File dir : folders) {
+                Log.d(WebAppInterface.TAG, dir.getAbsolutePath());
                 indexFilesInDirectory(dir);
             }
             conn.setTransactionSuccessful(); // Помечаем транзакцию как успешную

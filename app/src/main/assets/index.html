@@ -6,25 +6,47 @@
     <title>Mvd Doc Search Minus</title>
 </head>
 <body>
+<button onclick="Android.selectFolder()">Выбрать папку</button><br><br>
 <button id="buildIndex">Build Index</button><br><br>
+<div id="indexResult"></div>
+<input type="hidden" id="currentIndexPath" value="">
 <input type="search" id="searchQuery"><br>
 <h4>Search result: </h4>
 <div id="searchResult"></div>
 <script>
 const resultEl = document.getElementById('searchResult');
+const currentIndexPath = document.getElementById('currentIndexPath');
+
 document.getElementById('searchQuery').addEventListener('keyup', (e) => {
   if (e.keyCode === 13) {
     if (e.target.value != '') {
     e.preventDefault();
-      resultEl.innerHTML = Android.doSearch(e.target.value);
+      const res = Android.doSearch(e.target.value);
+      if (looksLikeJSON(res)) {
+        resultEl.innerHTML = JSON.parse(res).map(o => o.path + ': ' + o.hits).join('<br>');
+      } else {
+        resultEl.innerHTML = res
+      }
     }
   }
 });
 
 document.getElementById('buildIndex').addEventListener('click', (e) => {
-    console.log('bild index button clicked');
-    resultEl.innerHTML = Android.doIndex();
+    console.log('build index button clicked');
+    resultEl.innerHTML = Android.doIndex(currentIndexPath.value);
 });
+
+function onFolderChosen(path) {
+    document.getElementById('indexResult').innerHTML = "Путь к папке: " + path;
+    currentIndexPath.value = path;
+}
+
+function looksLikeJSON(str) {
+    str = str.trim();
+    return (str.startsWith('{') && str.endsWith('}')) ||
+           (str.startsWith('[') && str.endsWith(']'));
+}
+
 </script>
 </body>
 </html>
