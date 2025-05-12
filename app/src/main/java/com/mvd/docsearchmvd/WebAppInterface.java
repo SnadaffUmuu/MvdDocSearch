@@ -1,9 +1,12 @@
 package com.mvd.docsearchmvd;
 
+import static com.mvd.docsearchmvd.util.Util.escape;
+
 import android.content.*;
 import android.net.Uri;
 import android.webkit.JavascriptInterface;
 import android.util.Log;
+import android.webkit.WebView;
 
 import com.mvd.docsearchmvd.db.DatabaseManager;
 import com.mvd.docsearchmvd.indexer.FileIndexer;
@@ -12,21 +15,28 @@ import com.mvd.docsearchmvd.search.SearchEngine;
 
 import com.google.gson.Gson;
 
+import org.json.JSONObject;
+
 import java.io.File;
+import java.io.IOException;
 import java.io.StringWriter;
 import java.io.PrintWriter;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.sql.SQLException;
 import java.util.List;
 
 public class WebAppInterface {
     public static final String TAG = "DocSearchMvdLog";
     private Context context;
-    WebAppInterface(Context ctx) {
+    private WebView webView;
+    WebAppInterface(Context ctx, WebView webView) {
         this.context = ctx;
+        this.webView = webView;
     }
     @JavascriptInterface
     public String doSearch(String query) {
         try {
-            Log.d(TAG, "doSearch called");
             DatabaseManager db = new DatabaseManager(context);
             SearchEngine se = new SearchEngine(db);
             List<Hit> results = se.search(query);
@@ -36,34 +46,116 @@ public class WebAppInterface {
             Log.d(TAG, "results json: " + json);
             return json;
         } catch (Exception e) {
-            return "Произошла ошибка поиска";
+            StringWriter sw = new StringWriter();
+            e.printStackTrace(new PrintWriter(sw));
+            return "Произошла ошибка поиска<br>" + sw.toString();
         }
     }
 
     @JavascriptInterface
-    public String doIndex(String path) {
+    public String getFileContent(String path) {
         try {
-            Log.d(TAG, "doIndex called");
+            return new String(Files.readAllBytes((new File(path)).toPath()), StandardCharsets.UTF_8);
+        } catch (Exception e) {
+            StringWriter sw = new StringWriter();
+            e.printStackTrace(new PrintWriter(sw));
+            return "Ошибка чтения файла" + path + "<br>" + sw.toString();
+        }
+      /*
+
+BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(file), charset));
+Deque<String> backLines = new LinkedList<>();
+StringBuilder backBuffer = new StringBuilder();
+List<String> results = new ArrayList<>();
+
+String line;
+while ((line = reader.readLine()) != null) {
+    int index = line.indexOf(searchTerm);
+    while (index != -1) {
+        String before = backBuffer.length() > 100 ?
+            backBuffer.substring(backBuffer.length() - 100) : backBuffer.toString();
+        int afterEnd = Math.min(line.length(), index + searchTerm.length() + 100);
+        String after = line.substring(index, afterEnd);
+        results.add(before + after);
+        index = line.indexOf(searchTerm, index + 1);
+    }
+
+    // Обновляем буфер
+    backLines.add(line);
+    backBuffer.append(line).append("\n");
+    while (backBuffer.length() > 300) {
+        String removed = backLines.removeFirst();
+        backBuffer.delete(0, removed.length() + 1); // +1 из-за \n
+    }
+}
+
+       */
+    }
+
+    @JavascriptInterface
+    public String deleteIndexesForPaths (List<String> paths) {
+      //TODO
+      DatabaseManager db = new DatabaseManager(context);
+      return "";
+    }
+
+    @JavascriptInterface
+    public void indexFolder(String path) {
+        try {
+            Log.d(TAG, "indexFolder called");
             File folder = new File(path);
             Log.d(TAG, "Path: " + path);
             Log.d(TAG, "Can read: " + folder.canRead());
             Log.d(TAG, "Exists: " + folder.exists());
             Log.d(TAG, "IsDirectory: " + folder.isDirectory());
-            if (folder == null || !folder.exists() || !folder.isDirectory()) return "Invalid folder.";
+            if (folder == null || !folder.exists() || !folder.isDirectory()) {
+                webView.post(() -> {
+                    String js = String.format("onIndexDone(%s)", "Невалидная папка");
+                    webView.evaluateJavascript(js, null);
+                });
+            }
 
             DatabaseManager db = new DatabaseManager(context);
-            db.init(true);
+            db.init(false);
 
             FileIndexer fileIndexer = new FileIndexer(db, context);
 
-            File[] folders = new File[] { folder };
-            fileIndexer.updateIndex(folders);
+            fileIndexer.setProgressListener((fileName, done, total) -> {
+                Log.d(TAG, "setProgressListenerCallback: done: " + done + ", total: " + total);
+                int percent = (int)((done * 100.0) / total);
+                Log.d(TAG, "setProgressListenerCallback: percent: " + percent);
+                String js = String.format("onIndexProgress(\"%s\", %d)", escape(fileName), percent);
+                Log.d(TAG, "setProgressListenerCallback: calling js: " + js);
+                webView.post(() -> webView.evaluateJavascript(js, null));
+            });
 
-            return "Индекс " + path + "успешно завершен";
+            // Запуск в отдельном потоке
+            new Thread(() -> {
+                File[] folders = new File[] { folder };
+                try {
+                    fileIndexer.updateIndex(folders);
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                } catch (SQLException e) {
+                    throw new RuntimeException(e);
+                }
+                Gson gson = new Gson();
+                String json = gson.toJson(db.getAllFolders());
+                String escapedJson = JSONObject.quote(json);
+                Log.d(TAG, "results json: " + escapedJson);
+                webView.post(() -> {
+                    String js = String.format("onIndexDone(%s)", escapedJson);
+                    webView.evaluateJavascript(js, null);
+                });
+            }).start();
+
         } catch (Exception e) {
             StringWriter sw = new StringWriter();
             e.printStackTrace(new PrintWriter(sw));
-            return "Ошибка при выполнении индекса.<br>" + sw.toString();
+            webView.post(() -> {
+                String js = String.format("onIndexDone(%s)", "Ошибка при выполнении индекса.");
+                webView.evaluateJavascript(js, null);
+            });
         }
     }
 
@@ -71,6 +163,8 @@ public class WebAppInterface {
     public void selectFolder() {
         ((MainActivity) context).selectFolder();
     }
+
+
 
     private Uri getFolderUri() {
         SharedPreferences prefs = context.getSharedPreferences("docsearchmvd_prefs", Context.MODE_PRIVATE);

@@ -6,4 +6,8 @@ public class Util {
                 (ch >= '0' && ch <= '9') ||
                 (ch >= '\u0400' && ch <= '\u04FF');
     }
+
+    public static String escape(String s) {
+        return s.replace("\\", "\\\\").replace("\"", "\\\"");
+    }
 }

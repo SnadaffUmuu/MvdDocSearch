@@ -45,14 +45,20 @@ public class DatabaseManager {
 
         db.execSQL("CREATE TABLE IF NOT EXISTS tokens(" +
                 "token_id INTEGER, " +
-                "file_id INTEGER NOT NULL REFERENCES files(id), " +
+                "file_id INTEGER NOT NULL, " +
                 "positions TEXT NOT NULL, " +
+                "FOREIGN KEY(file_id) REFERENCES files(id), " +
                 "FOREIGN KEY(token_id) REFERENCES dict(id));");
+
+        db.execSQL("CREATE TABLE indexed_folders (" +
+                "id INTEGER PRIMARY KEY," +
+                "path TEXT NOT NULL UNIQUE);");
 
                 if (clear) {
                     db.execSQL("DELETE FROM tokens;");
                     db.execSQL("DELETE FROM files;");
                     db.execSQL("DELETE FROM dict;");
+                    db.execSQL("DELETE FROM indexed_folders;");
                     Log.d(WebAppInterface.TAG, "[INFO] База очищена");
                 }
     }
@@ -101,7 +107,27 @@ public class DatabaseManager {
         } finally {
             cursor.close();
         }
-        //TODO: remove missing files from db
+    }
+
+    public List<Map<String, String>> getAllFolders() {
+        List<Map<String, String>> files = new ArrayList<>();
+
+        Cursor cursor = db.rawQuery("SELECT id, path  FROM indexed_folders", null);
+        try {
+            if (cursor.moveToFirst()) {
+                do {
+                    Map<String, String> file = new HashMap<>();
+                    file.put("id", cursor.getString(cursor.getColumnIndexOrThrow("id")));
+                    file.put("path", cursor.getString(cursor.getColumnIndexOrThrow("path")));
+                    files.add(file);
+                } while (cursor.moveToNext());
+            } else {
+                throw new RuntimeException("Ошибка при чтении из таблицы indexed_files");
+            }
+        } finally {
+            cursor.close();
+        }
+        return files;
     }
 
     public int getFileId(String filePath) {
@@ -158,6 +184,22 @@ public class DatabaseManager {
             cursor.close();
         }
         return result;
+    }
+
+    public void insertIndexedFolder(File folder) {
+        String insertSql = "INSERT INTO indexed_folders (path) VALUES (?)";
+        SQLiteStatement stmt = db.compileStatement(insertSql);
+        stmt.bindString(1, folder.getAbsolutePath());
+        stmt.executeInsert();
+    }
+
+    public boolean rootExist(File folder) {
+        Cursor cursor = db.rawQuery("SELECT id  FROM indexed_folders", null);
+        try {
+            return cursor.moveToFirst();
+        } finally {
+            cursor.close();
+        }
     }
 
 }

@@ -96,13 +96,13 @@ public class MainActivity extends AppCompatActivity {
         webView.getSettings().setJavaScriptEnabled(true);
         webView.getSettings().setDomStorageEnabled(true);
         webView.getSettings().setCacheMode(WebSettings.LOAD_NO_CACHE);
-        webView.addJavascriptInterface(new WebAppInterface(this), "Android");
+        webView.addJavascriptInterface(new WebAppInterface(this, webView), "Android");
         webView.setWebViewClient(new WebViewClient());
         WebView.setWebContentsDebuggingEnabled(true);
         webView.setWebChromeClient(new WebChromeClient() {
             @Override
             public boolean onConsoleMessage(ConsoleMessage message) {
-                Log.d("WebViewConsole", message.message() + " @ " + message.lineNumber());
+                Log.d(WebAppInterface.TAG, message.message() + " @ " + message.lineNumber());
                 return true;
             }
         });

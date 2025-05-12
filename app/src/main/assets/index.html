@@ -5,46 +5,214 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mvd Doc Search Minus</title>
 </head>
-<body>
-<button onclick="Android.selectFolder()">Выбрать папку</button><br><br>
-<button id="buildIndex">Build Index</button><br><br>
-<div id="indexResult"></div>
-<input type="hidden" id="currentIndexPath" value="">
-<input type="search" id="searchQuery"><br>
-<h4>Search result: </h4>
-<div id="searchResult"></div>
-<script>
-const resultEl = document.getElementById('searchResult');
-const currentIndexPath = document.getElementById('currentIndexPath');
+<style>
+  .searchResult {
+    display:block;
+    padding:5px;
+    margin-bottom:10px;
+    border-bottom:1px dashed #ccc;
+    display:flex;
+    flex-flow: row nowrap;
+    justify-content: space-between;
+  }
 
-document.getElementById('searchQuery').addEventListener('keyup', (e) => {
+  .excerpt {
+    cursor:pointer;
+    padding:10px;
+    border-bottom:1px solid black;
+  }
+
+  .excerpt strong {
+    color: #0018a3;
+    font-weight: normal;
+  }
+
+  section,
+  .section {
+    border:1px solid #ccc;
+    border-radius: 10px;
+    padding:5px;
+    margin-bottom:5px;
+  }
+
+  .hidden {
+    display:none;
+  }
+
+  #searchResultWrap {
+    max-height:70vh;
+    overflow: auto;
+  }
+
+  #indexedFoldersList {
+    padding:0;
+    margin:0;
+    list-style:none;
+  }
+
+  #currentIndexWrap {
+    max-height: 30vh;
+    max-width:95%;
+    overflow: auto;
+  }
+
+  #fileName {
+    margin:0;
+    padding:0;
+  }
+
+</style>
+<body>
+  <section class="view" id="manageIndex">
+    <h4>Manage index</h4>
+    <input type="hidden" id="currentIndexPath" value="">
+    <button onclick="Android.selectFolder()">Выбрать папку</button><br><br>
+    <button id="buildIndex">Build Index</button><br><br>
+    <div id="progressContainer">
+      <p id="fileName">Файл: -</p>
+      <progress id="progressBar" value="0" max="100"></progress>
+    </div>
+    <section id="currentIndexWrap">
+      <div id="currentIndex"></div>
+    </section>
+    <section id="indexResult"></section>
+  </section>
+  <div class="view">
+    <h4>Search</h4>
+    <input type="search" id="searchQuery"><br>
+    <h4>Search result: </h4>
+    <div id="searchResultWrap">
+      <div id="searchResult"></div>
+    </div>
+  </div>
+  <div class="view">
+    <div id="excerpts"></div>
+  </div>
+<script>
+  const buildIndexButton = document.getElementById('buildIndex');
+  const currentIndexPathInput = document.getElementById('currentIndexPath');
+  const currentIndexEl = document.getElementById('currentIndex');
+  const indexResultEl = document.getElementById('indexResult');
+  const searchQueryEl = document.getElementById('searchQuery');
+  const searchResultEl = document.getElementById('searchResult');
+  const excerptsContainer = document.getElementById('excerpts');
+  const indexPregressContainer = document.getElementById('progressContainer');
+  const excerptLimit = 50;
+  const prefix = "/storage/emulated/0";
+
+searchQueryEl.addEventListener('keyup', (e) => {
   if (e.keyCode === 13) {
     if (e.target.value != '') {
     e.preventDefault();
+      console.log('front: starting search');
+      searchResult.innerHTML = '';
+      excerptsContainer.innerHTML = '';
       const res = Android.doSearch(e.target.value);
+      console.log('front: search result: ', res);
       if (looksLikeJSON(res)) {
-        resultEl.innerHTML = JSON.parse(res).map(o => o.path + ': ' + o.hits).join('<br>');
+        searchResultEl.innerHTML = JSON.parse(res).map(o => {
+          return `
+            <div class="searchResult" data-file-id="${o.id}" data-file-path="${o.path}">
+              <span class="searchResult_path">${o.path.startsWith(prefix) ? o.path.slice(prefix.length) : o.path}</span>
+              <span class="searchResult_hits">${o.hits}</span>
+            </div>
+          `
+        }).join('');
       } else {
-        resultEl.innerHTML = res
+        searchResultEl.innerHTML = res
       }
     }
   }
 });
 
-document.getElementById('buildIndex').addEventListener('click', (e) => {
+/* index folder */
+buildIndexButton.addEventListener('click', (e) => {
     console.log('build index button clicked');
-    resultEl.innerHTML = Android.doIndex(currentIndexPath.value);
+    Android.indexFolder(currentIndexPathInput.value);
 });
 
 function onFolderChosen(path) {
-    document.getElementById('indexResult').innerHTML = "Путь к папке: " + path;
-    currentIndexPath.value = path;
+    console.log('front: folder chosen', path);
+    currentIndexPathInput.value = path;
+    currentIndexEl.innerHTML = 'Текущая папка:<br>' + path;
+  }
+  
+  function showExcerpts (path) {
+  console.log('front: loading file content', path);
+  const fileContent = Android.getFileContent(path);
+  const excerpts = [];
+  findAllOccurrencesWithPositions(fileContent, searchQueryEl.value).forEach(o => {
+    console.log('front: excerpt found: ', o.match);
+    const textBefore = fileContent.substring(Math.max(0, o.index - excerptLimit), o.index);
+    console.log('front: textBefore: ', textBefore);
+    const textAfter = fileContent.substring(o.index + o.match.length, o.index + o.match.length + excerptLimit);
+    console.log('front: textAfter: ', textAfter);
+    excerpts.push(`<div class="excerpt" data-index="${o.index}">${textBefore}<strong>${searchQueryEl.value}</strong>${textAfter}</div>`)
+  });
+  excerptsContainer.innerHTML = excerpts.join('');
 }
 
 function looksLikeJSON(str) {
     str = str.trim();
     return (str.startsWith('{') && str.endsWith('}')) ||
            (str.startsWith('[') && str.endsWith(']'));
+}
+
+document.addEventListener('click', (e) => {
+  const searchResEl = e.target.classList.contains('searchResult') ? e.target : e.target.closest('.searchResult');
+  if (searchResEl) {
+    console.log('front: excerpt element clicked')
+    showExcerpts(searchResEl.dataset.filePath); 
+  }
+});
+
+function escapeRegExp(string) {
+  return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function findAllOccurrencesWithPositions(text, searchString) {
+  const regex = new RegExp(escapeRegExp(searchString), 'g');
+  let match;
+  const results = [];
+  
+  while ((match = regex.exec(text)) !== null) {
+    results.push({
+      match: match[0],
+      index: match.index
+    });
+    // Для избежания бесконечного цикла при нулевой длине совпадения
+    if (match.index === regex.lastIndex) {
+      regex.lastIndex++;
+    }
+  }
+  
+  return results;
+}
+
+window.onIndexProgress = function(fileName, percent) {
+  console.log('front: onIndexProgress ' + percent);
+  document.getElementById('fileName').textContent = "Файл: " + fileName;
+  document.getElementById('progressBar').value = percent;
+}
+
+function onIndexDone(data) {
+    let allFoldersRes = '';
+    if (looksLikeJSON(data)) {
+      allFoldersRes = JSON.parse(data).map(o => {
+        return `
+          <li><input type="checkbox" name="indexFolder" value="${o.id}">&nbsp;${o.path}</li>
+        `
+      }).join('');
+    } else {
+      allFoldersRes = data;
+    }
+    indexResultEl.innerHTML = `
+      <h5>Indexed folders</h5>
+      <ul id="indexedFoldersList">
+        ${allFoldersRes}
+      </ul>
+    `;
+    indexPregressContainer.classList.add('hidden');
 }
 
 </script>

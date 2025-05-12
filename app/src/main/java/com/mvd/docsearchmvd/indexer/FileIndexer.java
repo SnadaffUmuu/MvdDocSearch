@@ -28,6 +28,9 @@ public class FileIndexer {
             "fb2"
     };
     private final Context context;
+    private IndexProgressListener progressListener;
+    private int totalFiles = 0;
+    private int filesDone = 0;
 
     public FileIndexer(DatabaseManager db, Context context) throws SQLException {
         this.context = context;
@@ -35,6 +38,14 @@ public class FileIndexer {
         this.db = db;
         this.tokenizer = new Tokenizer();
         this.dict = new TokenDictionary(conn);
+    }
+
+    public interface IndexProgressListener {
+        void onFileIndexed(String fileName, int filesDone, int totalFiles);
+    }
+
+    public void setProgressListener(IndexProgressListener listener) {
+        this.progressListener = listener;
     }
 
     private boolean isAllowedExtension(File file) {
@@ -47,9 +58,9 @@ public class FileIndexer {
 
         int fileId;
         fileId = db.getFileId(file.getAbsolutePath());
-
+        Log.d(WebAppInterface.TAG, "tokenize");
         List<Token> tokens = tokenizer.tokenize(content);
-
+        Log.d(WebAppInterface.TAG, "Tokens ready: " + tokens.size() + "; inserting into db");
         String sql = "INSERT INTO tokens (token_id, file_id, positions) VALUES (?, ?, ?)";
         SQLiteStatement stmt = conn.compileStatement(sql);
 
@@ -60,12 +71,12 @@ public class FileIndexer {
                 stmt.bindLong(1, tokenId);
                 stmt.bindLong(2, fileId);
                 stmt.bindString(3, token.positions);
-                stmt.executeInsert();  // вставка одной строки
+                stmt.executeInsert();
             } catch (Exception e) {
                 Log.e(WebAppInterface.TAG, "Ошибка вставки токена: " + token.text, e);
             }
         }
-
+        Log.d(WebAppInterface.TAG, "tokens inserted");
         stmt.close();
     }
 
@@ -99,18 +110,52 @@ public class FileIndexer {
 
     public void updateIndex(File[] folders) throws IOException, SQLException {
         Log.d(WebAppInterface.TAG, "updateIndex");
+        List<File> allFiles = collectAllFiles(folders);
+        totalFiles = allFiles.size();
+        Log.d(WebAppInterface.TAG, "allFiles size: " + totalFiles);
+        filesDone = 0;
         conn.beginTransaction();
         try {
-            for (File dir : folders) {
-                Log.d(WebAppInterface.TAG, dir.getAbsolutePath());
-                indexFilesInDirectory(dir);
+            for (File file : allFiles) {
+                Log.d(WebAppInterface.TAG, file.getAbsolutePath());
+                //indexFilesInDirectory(dir);
+                indexFileIfNeeded(file);
+                filesDone++;
+                Log.d(WebAppInterface.TAG, "Progress, files Done: " + filesDone);
+                if (progressListener != null) {
+                    Log.d(WebAppInterface.TAG, "calling onFileIndexed");
+                    progressListener.onFileIndexed(file.getName(), filesDone, totalFiles);
+                }
             }
-            conn.setTransactionSuccessful(); // Помечаем транзакцию как успешную
+            conn.setTransactionSuccessful();
         } catch (Exception e) {
             Log.e(WebAppInterface.TAG, "Ошибка при обновлении индекса", e);
-            throw e; // Прокидываем исключение, чтобы вызвать откат
+            throw e;
         } finally {
-            conn.endTransaction(); // Закрывает транзакцию, коммит или откат в зависимости от успешности
+            conn.endTransaction();
+        }
+    }
+
+    private List<File> collectAllFiles(File[] roots) {
+        List<File> result = new ArrayList<>();
+        for (File root : roots) {
+            if (!db.rootExist(root)) {
+                db.insertIndexedFolder(root);
+                walk(root, result);
+                //TODO: make feedback if exists
+            }
+        }
+        return result;
+    }
+
+    private void walk(File file, List<File> result) {
+        if (file.isDirectory()) {
+            File[] files = file.listFiles();
+            if (files != null) {
+                for (File f : files) walk(f, result);
+            }
+        } else if (file.isFile() && file.canRead() && isAllowedExtension(file)) {
+            result.add(file);
         }
     }
 }
