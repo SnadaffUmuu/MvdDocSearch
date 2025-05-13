@@ -138,11 +138,16 @@ public class FileIndexer {
 
     private List<File> collectAllFiles(File[] roots) {
         List<File> result = new ArrayList<>();
+        Log.d(WebAppInterface.TAG, "collectAllFiles called");
         for (File root : roots) {
-            if (!db.rootExist(root)) {
+            Log.d(WebAppInterface.TAG, "root folder:" + root.getAbsolutePath());
+            if (!db.rootExists(root)) {
+                Log.d(WebAppInterface.TAG, "folder doesn't exists in db yet, inserting");
                 db.insertIndexedFolder(root);
                 walk(root, result);
                 //TODO: make feedback if exists
+            } else {
+                Log.d(WebAppInterface.TAG, "folder already exists in indexed_folders");
             }
         }
         return result;
@@ -150,11 +155,14 @@ public class FileIndexer {
 
     private void walk(File file, List<File> result) {
         if (file.isDirectory()) {
+            Log.d(WebAppInterface.TAG, "file is folder:" + file.getAbsolutePath());
             File[] files = file.listFiles();
+            Log.d(WebAppInterface.TAG, "the folder contains files: " + files.length);
             if (files != null) {
                 for (File f : files) walk(f, result);
             }
         } else if (file.isFile() && file.canRead() && isAllowedExtension(file)) {
+            Log.d(WebAppInterface.TAG, "adding file: " + file.getAbsolutePath());
             result.add(file);
         }
     }

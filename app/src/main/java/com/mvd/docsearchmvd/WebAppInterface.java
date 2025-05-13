@@ -18,7 +18,11 @@ import com.google.gson.Gson;
 import org.json.JSONObject;
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.io.StringWriter;
 import java.io.PrintWriter;
 import java.nio.charset.StandardCharsets;
@@ -109,15 +113,15 @@ while ((line = reader.readLine()) != null) {
             Log.d(TAG, "Exists: " + folder.exists());
             Log.d(TAG, "IsDirectory: " + folder.isDirectory());
             if (folder == null || !folder.exists() || !folder.isDirectory()) {
+                Log.d(TAG, "Invalid folder");
                 webView.post(() -> {
-                    String js = String.format("onIndexDone(%s)", "Невалидная папка");
+                    String message = "Невалидная папка";
+                    String js = String.format("onIndexDone(%s)", JSONObject.quote(message));
                     webView.evaluateJavascript(js, null);
                 });
             }
 
             DatabaseManager db = new DatabaseManager(context);
-            db.init(false);
-
             FileIndexer fileIndexer = new FileIndexer(db, context);
 
             fileIndexer.setProgressListener((fileName, done, total) -> {
@@ -164,7 +168,39 @@ while ((line = reader.readLine()) != null) {
         ((MainActivity) context).selectFolder();
     }
 
+    @JavascriptInterface
+    public String getIndexedFolders() {
+        DatabaseManager db = new DatabaseManager(context);
+        Gson gson = new Gson();
+        return gson.toJson(db.getAllFolders());
+    }
 
+    @JavascriptInterface
+    public void exportDB() {
+        Log.d(TAG, "exportDB called");
+        String dbName = "index.db";
+        File dbFile = new File(context.getFilesDir(), "index.db");
+        File exportDir = new File(context.getExternalFilesDir(null), "db-export");
+        if (!exportDir.exists()) exportDir.mkdirs();
+
+        File exportedFile = new File(exportDir, dbName);
+
+        try (
+                InputStream in = new FileInputStream(dbFile);
+                OutputStream out = new FileOutputStream(exportedFile)
+        ) {
+            byte[] buffer = new byte[4096];
+            int length;
+            while ((length = in.read(buffer)) > 0) {
+                out.write(buffer, 0, length);
+            }
+            out.flush();
+        } catch (IOException e) {
+            StringWriter sw = new StringWriter();
+            e.printStackTrace(new PrintWriter(sw));
+            Log.e(WebAppInterface.TAG, sw.toString());
+        }
+    }
 
     private Uri getFolderUri() {
         SharedPreferences prefs = context.getSharedPreferences("docsearchmvd_prefs", Context.MODE_PRIVATE);

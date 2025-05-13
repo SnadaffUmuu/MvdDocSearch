@@ -23,6 +23,8 @@ import android.Manifest;
 import android.content.pm.PackageManager;
 import android.widget.Toast;
 
+import com.mvd.docsearchmvd.db.DatabaseManager;
+
 import org.json.JSONObject;
 
 public class MainActivity extends AppCompatActivity {
@@ -107,8 +109,9 @@ public class MainActivity extends AppCompatActivity {
             }
         });
         webView.clearCache(true);
+        DatabaseManager db = new DatabaseManager(this);
+        db.init(false);
         webView.loadUrl("file:///android_asset/index.html");
-        // webView.loadUrl("http://192.168.2.48:3001/index.html");
     }
 
     private String getPathFromUri(Uri uri) {

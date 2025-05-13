@@ -6,14 +6,12 @@ import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteStatement;
 import android.util.Log;
 
-import androidx.documentfile.provider.DocumentFile;
-
 import com.mvd.docsearchmvd.WebAppInterface;
 
-import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.*;
@@ -35,32 +33,42 @@ public class DatabaseManager {
     public void init(boolean clear) {
         Log.d(WebAppInterface.TAG, "Init db");
 
-        db.execSQL("CREATE TABLE IF NOT EXISTS dict (id INTEGER PRIMARY KEY, token TEXT UNIQUE);");
+        try {
+            Log.d(WebAppInterface.TAG, "create dict if not exists");
+            db.execSQL("CREATE TABLE IF NOT EXISTS dict (id INTEGER PRIMARY KEY, token TEXT UNIQUE);");
 
-        db.execSQL("CREATE TABLE IF NOT EXISTS files(" +
-                "id INTEGER PRIMARY KEY, " +
-                "path TEXT UNIQUE NOT NULL, " +
-                "size INTEGER NOT NULL, " +
-                "last_modified INTEGER NOT NULL);");
+            Log.d(WebAppInterface.TAG, "create files if not exists");
+            db.execSQL("CREATE TABLE IF NOT EXISTS files(" +
+                    "id INTEGER PRIMARY KEY, " +
+                    "path TEXT UNIQUE NOT NULL, " +
+                    "size INTEGER NOT NULL, " +
+                    "last_modified INTEGER NOT NULL);");
 
-        db.execSQL("CREATE TABLE IF NOT EXISTS tokens(" +
-                "token_id INTEGER, " +
-                "file_id INTEGER NOT NULL, " +
-                "positions TEXT NOT NULL, " +
-                "FOREIGN KEY(file_id) REFERENCES files(id), " +
-                "FOREIGN KEY(token_id) REFERENCES dict(id));");
+            Log.d(WebAppInterface.TAG, "create tokens if not exists");
+            db.execSQL("CREATE TABLE IF NOT EXISTS tokens(" +
+                    "token_id INTEGER, " +
+                    "file_id INTEGER NOT NULL, " +
+                    "positions TEXT NOT NULL, " +
+                    "FOREIGN KEY(file_id) REFERENCES files(id), " +
+                    "FOREIGN KEY(token_id) REFERENCES dict(id));");
 
-        db.execSQL("CREATE TABLE indexed_folders (" +
-                "id INTEGER PRIMARY KEY," +
-                "path TEXT NOT NULL UNIQUE);");
+            Log.d(WebAppInterface.TAG, "create indexed_folders if not exists");
+            db.execSQL("CREATE TABLE  IF NOT EXISTS indexed_folders(" +
+                    "id INTEGER PRIMARY KEY, " +
+                    "path TEXT NOT NULL UNIQUE);");
 
-                if (clear) {
-                    db.execSQL("DELETE FROM tokens;");
-                    db.execSQL("DELETE FROM files;");
-                    db.execSQL("DELETE FROM dict;");
-                    db.execSQL("DELETE FROM indexed_folders;");
-                    Log.d(WebAppInterface.TAG, "[INFO] База очищена");
-                }
+            if (clear) {
+                db.execSQL("DELETE FROM tokens;");
+                db.execSQL("DELETE FROM files;");
+                db.execSQL("DELETE FROM dict;");
+                db.execSQL("DELETE FROM indexed_folders;");
+                Log.d(WebAppInterface.TAG, "[INFO] База очищена");
+            }
+        } catch (Exception e) {
+            StringWriter sw = new StringWriter();
+            e.printStackTrace(new PrintWriter(sw));
+            Log.e(WebAppInterface.TAG, sw.toString());
+        }
     }
 
     public String updateFileMetadata(File file) throws IOException {
@@ -193,8 +201,9 @@ public class DatabaseManager {
         stmt.executeInsert();
     }
 
-    public boolean rootExist(File folder) {
-        Cursor cursor = db.rawQuery("SELECT id  FROM indexed_folders", null);
+    public boolean rootExists(File folder) {
+        Log.d(WebAppInterface.TAG, "rootExists called for folder: " + folder.getAbsolutePath());
+        Cursor cursor = db.rawQuery("SELECT id  FROM indexed_folders WHERE path = ?", new String[]{folder.getAbsolutePath()});
         try {
             return cursor.moveToFirst();
         } finally {
