@@ -8,6 +8,7 @@ import android.webkit.JavascriptInterface;
 import android.util.Log;
 import android.webkit.WebView;
 
+import com.google.gson.reflect.TypeToken;
 import com.mvd.docsearchmvd.db.DatabaseManager;
 import com.mvd.docsearchmvd.indexer.FileIndexer;
 import com.mvd.docsearchmvd.search.Hit;
@@ -34,6 +35,7 @@ public class WebAppInterface {
     public static final String TAG = "DocSearchMvdLog";
     private Context context;
     private WebView webView;
+    private final Gson gson = new Gson();
     WebAppInterface(Context ctx, WebView webView) {
         this.context = ctx;
         this.webView = webView;
@@ -45,7 +47,6 @@ public class WebAppInterface {
             SearchEngine se = new SearchEngine(db);
             List<Hit> results = se.search(query);
             Log.d(TAG, "results num: " + results.size());
-            Gson gson = new Gson();
             String json = gson.toJson(results);
             Log.d(TAG, "results json: " + json);
             return json;
@@ -97,10 +98,36 @@ while ((line = reader.readLine()) != null) {
     }
 
     @JavascriptInterface
-    public String deleteIndexesForPaths (List<String> paths) {
-      //TODO
-      DatabaseManager db = new DatabaseManager(context);
-      return "";
+    public String deleteIndexesForPaths (String jsonArrayString) {
+        try {
+            DatabaseManager db = new DatabaseManager(context);
+            List<String> paths = gson.fromJson(jsonArrayString, new TypeToken<List<String>>(){}.getType());
+            Log.d(WebAppInterface.TAG, "deleting indexes for paths: " + jsonArrayString);
+            for (String path : paths) {
+                db.deleteIndexForPath(path);
+            }
+            Log.d(WebAppInterface.TAG, "deleting indexes finished, returning folders...");
+            return gson.toJson(db.getAllFolders());
+        } catch (Exception e) {
+            StringWriter sw = new StringWriter();
+            e.printStackTrace(new PrintWriter(sw));
+            Log.e(TAG, "Error deleting indexes for folders: " + sw.toString());
+        }
+        return null;
+    }
+
+    @JavascriptInterface
+    public String clearDB() {
+        try {
+            DatabaseManager db = new DatabaseManager(context);
+            db.clearTables();
+            return gson.toJson(db.getAllFolders());
+        } catch (Exception e) {
+            StringWriter sw = new StringWriter();
+            e.printStackTrace(new PrintWriter(sw));
+            Log.e(TAG, "Error clearing DB: " + sw.toString());
+        }
+        return null;
     }
 
     @JavascriptInterface
@@ -143,7 +170,6 @@ while ((line = reader.readLine()) != null) {
                 } catch (SQLException e) {
                     throw new RuntimeException(e);
                 }
-                Gson gson = new Gson();
                 String json = gson.toJson(db.getAllFolders());
                 String escapedJson = JSONObject.quote(json);
                 Log.d(TAG, "results json: " + escapedJson);
@@ -171,7 +197,6 @@ while ((line = reader.readLine()) != null) {
     @JavascriptInterface
     public String getIndexedFolders() {
         DatabaseManager db = new DatabaseManager(context);
-        Gson gson = new Gson();
         return gson.toJson(db.getAllFolders());
     }
 
@@ -195,6 +220,7 @@ while ((line = reader.readLine()) != null) {
                 out.write(buffer, 0, length);
             }
             out.flush();
+            Log.d(TAG, "export completed");
         } catch (IOException e) {
             StringWriter sw = new StringWriter();
             e.printStackTrace(new PrintWriter(sw));

@@ -24,13 +24,17 @@
   }
 
   .excerpt.current {
-    background:#f5e6ec;
+    background: #f5e6ec;
   }
 
-  .excerpt strong,
-  #fullPreview strong {
+  .excerpt mark,
+  #fullPreview mark {
     color: #0018a3;
-    font-weight: normal;
+    background: none;
+  }
+
+  mark[data-index] {
+    border-bottom:1px dotted #ccc;
   }
 
   section,
@@ -50,10 +54,38 @@
     overflow: auto;
   }
 
+  .searchResult {
+    display:flex;
+    flex-flow:row nowrap;
+    padding:5px 0;
+  }
+
+  .searchResult_details {
+    flex: 1 0 auto;
+    padding-right:5px;
+  }
+
+  .searchResult_path {
+    font-size:12px;
+    overflow: hidden;
+  }
+
+  .searchResult_details > span {
+    display:block;
+  }
+
+  .searchResult_hits {
+    flex: 0 0 auto;
+  }
+
   #indexedFoldersList {
     padding: 0;
     margin: 0;
     list-style: none;
+  }
+
+  #indexedFoldersList {
+    overflow-wrap: break-word;
   }
 
   #currentIndexWrap {
@@ -68,53 +100,78 @@
   }
 
   #previews {
-    max-height:40vh;
-    max-width:100vw;
-    overflow:auto;
-    height: 40vh;
+    max-width: 100vw;
+    overflow: auto;
+    height: 70vh;
     width: 100%;
   }
 
   #previewColsWrap {
-    display:flex;
-    flex-flow:row nowrap;
-    max-height:100%;
+    display: flex;
+    flex-flow: row nowrap;
+    max-height: 100%;
     height: 100%;
   }
 
   .previewColumn {
-    width:100%;
-    max-height:100%;
+    width: 100%;
+    max-height: 100%;
     overflow: auto;
     flex: 1 0 auto;
-    max-height: 100%;
+    height: 100%;
     box-sizing: border-box;
     border: 1px solid gray;
+    position: relative;
+  }
+
+  .previewNav {
+    position: sticky;
+    height: 40px;
+    width: 100%;
+    box-sizing: border-box;
+    background: rgb(255 215 232 / 33%);
+    border:0;
+    left: 0;
+    right: 0;
+    z-index: 100;
+  }
+
+  #prevChunk {
+    top: 0;
+  }
+
+  #nextChunk {
+    bottom: 0;
   }
 
   #fullPreview {
-    padding:5px;
-    will-change: transform;
-    contain: content;
+    padding: 5px;
     font-family: sans-serif;
     white-space: pre-wrap;
   }
 </style>
+
 <body>
-<section class="view" id="manageIndex">
+  <section class="view" id="manageIndex">
     <h4>Manage index</h4>
     <input type="hidden" id="currentIndexPath" value="">
     <button onclick="Android.selectFolder()">Выбрать папку</button><br><br>
-    <button onclick="Android.exportDB()">ExportDB</button><br><br>
-    <button id="buildIndex">Build Index</button><br><br>
     <div id="progressContainer">
       <p id="fileName">Файл: -</p>
       <progress id="progressBar" value="0" max="100"></progress>
     </div>
     <section id="currentIndexWrap">
       <div id="currentIndex"></div>
+      <br><button id="buildIndex">Build Index</button><br><br>
     </section>
-    <section id="indexResult"></section>
+    <section id="indexResultContainer">
+      <h5>Indexed folders</h5>
+      <button id="deleteIndexesForFolders" class="hidden" onClick="deleteIndexForSelectedFolders()">Delete selected
+        indexes</button>
+      <ul id="indexedFoldersList" class="hidden"></ul>
+    </section>
+    <button onclick="Android.exportDB()">Export DB</button><br><br>
+    <button onclick="clearDB()">Clear DB </button><br><br>
   </section>
   <div class="view">
     <h4>Search</h4>
@@ -127,109 +184,29 @@
     <div id="previews">
       <div id="previewColsWrap">
         <div class="previewColumn" id="excerptsOuter">
-          <div id="excerpts">
-<!--
-            <div class="excerpt">
-              111111111モスクワのことだよね？
-まあ…父が改めてあのプロバイダーと契約成立する予定。仕方ない😑
-いいプロバイダーではなくても…
-            </div>
-            <div class="excerpt">
-              モスクワのことだよね？
-まあ…父が改めてあのプロバイダーと契約成立する予定。仕方ない😑
-いいプロバイダーではなくても…
-            </div>
-            <div class="excerpt">
-              モスクワのことだよね？
-まあ…父が改めてあのプロバイダーと契約成立する予定。仕方ない😑
-いいプロバイダーではなくても…
-            </div>
-            <div class="excerpt">
-              モスクワのことだよね？
-まあ…父が改めてあのプロバイダーと契約成立する予定。仕方ない😑
-いいプロバイダーではなくても…
-            </div>
-            <div class="excerpt">
-              モスクワのことだよね？
-まあ…父が改めてあのプロバイダーと契約成立する予定。仕方ない😑
-いいプロバイダーではなくても…
-            </div>
-            <div class="excerpt">
-              モスクワのことだよね？
-まあ…父が改めてあのプロバイダーと契約成立する予定。仕方ない😑
-いいプロバイダーではなくても…
-            </div>
-            <div class="excerpt">
-              モスクワのことだよね？
-まあ…父が改めてあのプロバイダーと契約成立する予定。仕方ない😑
-いいプロバイダーではなくても…
-            </div>
-            <div class="excerpt">
-              モスクワのことだよね？
-まあ…父が改めてあのプロバイダーと契約成立する予定。仕方ない😑
-いいプロバイダーではなくても…
-            </div>
-            <div class="excerpt">
-              モスクワのことだよね？
-まあ…父が改めてあのプロバイダーと契約成立する予定。仕方ない😑
-いいプロバイダーではなくても…0000000
-            </div>
-          -->
-          </div>
+          <div id="excerpts"></div>
         </div>
         <div class="previewColumn" id="fullPreviewOuter">
+          <button class="previewNav" id="prevChunk" onClick="shiftPreview(false)"></button>
           <div id="fullPreview">
-            <!--
-START
-Альтернативная гипотеза: Суффиксный массив
-Нормализация текста: Все документы объединены в одну строку без разделителей.
 
-Индекс: Суффиксный массив для быстрого поиска подстрок.
-
-Плюсы:
-
-Молниеносный поиск любых подстрок (даже 100+ символов).
-
-Игнорирование структуры текста (переносы, пробелы).
-
-Минусы:
-
-Поиск частых символов (например, は) требует обработки множества суффиксов → медленно.
-
-Размер индекса ~60 МБ (суффиксный массив + исходный текст).
-
-Итог
-Наиболее вероятные варианты:
-
-n-gram индекс (биграммы) + позиции с оптимизацией для длинных запросов.
-
-Суффиксный массив на нормализованном тексте.
-
-Обе гипотезы объясняют поведение приложения, но суффиксный массив лучше соответствует скорости длинных запросов.
-
-Мы разрабатываем приложение, аналогичное вышеописанному, для поиска по текстам, содержащим смешанные языки. При этом из перечисленных выше особенностей работы приложения-прототипа далеко не все нам нужны. НЕ НУЖНО:
-- поиск через перенос строки или через знаки препинания - то есть мы не ищем текст "私、嬉しい"
-Мы разрабатываем приложение, аналогичное вышеописанному, для поиска по текстам, содержащим смешанные языки. При этом из перечисленных выше особенностей работы приложения-прототипа далеко не все нам нужны. НЕ НУЖНО:
-- поиск через перенос строки или через знаки препинания - то есть мы не ищем текст "私、嬉しい"　через запрос "私嬉", но будем искать "嬉し"
-- поиск по длинным кускам текста (текст целого предложения, или текст целого абзаца)
-
-Таким образом, если предложенная реализация будет содержать этот функционал, ничего страшного, но специально придумывать архитектуру, чтобы эти 2 пункта были возможны, не нужно! Нужен поиск по частичным совпадениям в рамках естественных блоков текста - предложений, строк (перенос строк). Нужно, чтобы искались отдельные символы (蚊) и частичные совпадения.            
-END
-          -->
           </div>
+          <button class="previewNav" id="nextChunk" onClick="shiftPreview(true)"></button>
         </div>
       </div>
     </div>
-  </div>  
+  </div>
   <script>
-    const excerptLimit = 50;
+    const shortLimit = 50;
     const fullLimit = 500;
+    const stringLimit = 80; //kb
     const prefix = "/storage/emulated/0";
 
     const buildIndexButton = document.getElementById('buildIndex');
     const currentIndexPathInput = document.getElementById('currentIndexPath');
     const currentIndexEl = document.getElementById('currentIndex');
-    const indexResultEl = document.getElementById('indexResult');
+    const indexedFildersListEl = document.getElementById('indexedFoldersList');
+    const deleteIndexesForFoldersButton = document.getElementById('deleteIndexesForFolders');
     const searchQueryEl = document.getElementById('searchQuery');
     const currentSearchQueryInput = document.getElementById('currentSearchQuery');
     const searchResultEl = document.getElementById('searchResult');
@@ -238,9 +215,12 @@ END
     const excerptsContainer = document.getElementById('excerpts');
     const fullPreviewOuter = document.getElementById('fullPreviewOuter');
     const fullPreviewEl = document.getElementById('fullPreview');
-    const indexPregressContainer = document.getElementById('progressContainer');
+    const indexProgressContainer = document.getElementById('progressContainer');
+    const progressBarEl = document.getElementById('progressbar');
+    const progressFileNameEl = document.getElementById('fileName');
 
     let currentFileContent = null;
+    let highlightedContent = null;
 
 
     function doSearch() {
@@ -254,9 +234,16 @@ END
       console.log('front: search result: ', res);
       if (looksLikeJSON(res)) {
         searchResultEl.innerHTML = JSON.parse(res).map(o => {
+          const actualPath = o.path.startsWith(prefix) ? o.path.slice(prefix.length) : o.path;
+          const parts = actualPath.split('/');
+          const filename = parts.pop();
+          const path = parts.join('/') + '/';
           return `
           <div class="searchResult" data-file-id="${o.id}" data-file-path="${o.path}">
-            <span class="searchResult_path">${o.path.startsWith(prefix) ? o.path.slice(prefix.length) : o.path}</span>
+            <span class="searchResult_details">
+              <span class="searchResult_filename">${filename}</span>
+              <span class="searchResult_path">${path}</span>
+            </span>
             <span class="searchResult_hits">${o.hits}</span>
           </div>
         `
@@ -268,6 +255,7 @@ END
 
     buildIndexButton.addEventListener('click', (e) => {
       console.log('build index button clicked');
+      indexProgressContainer.classList.remove('hidden');
       Android.indexFolder(currentIndexPathInput.value);
     });
 
@@ -280,48 +268,45 @@ END
     function showExcerpts(path) {
       console.log('front: loading file content', path);
       const query = currentSearchQueryInput.value;
+
       currentFileContent = Android.getFileContent(path);
+
       excerptsContainer.innerHTML = '';
+      fullPreviewEl.innerHTML = '';
       excerptsContainer.style.display = 'none';
       fullPreviewEl.style.display = 'none';
-      fullPreviewEl.innerHTML = '';
       previewsEl.scroll({
         left: 0,
         behavior: 'smooth'
       })
+
       const excerpts = [];
-      findAllOccurrencesWithPositions(currentFileContent, query).forEach((index, i) => {
-        const textBefore = currentFileContent.substring(Math.max(0, index - excerptLimit), index);
-        const textAfter = currentFileContent.substring(index + query.length, index + query.length + excerptLimit);
-        excerpts.push(`<div class="excerpt" data-index="${index}">${textBefore}<strong>${query}</strong>${textAfter}</div>`);
-        if (i == 0) {
-          displayFullFragment(index);
-        }
+      const indexes = findAllOccurrencesWithPositions(currentFileContent, query);
+
+      indexes.forEach((index, i) => {
+        const textBefore = currentFileContent.substring(Math.max(0, index - shortLimit), index);
+        const textAfter = currentFileContent.substring(index + query.length, index + query.length + shortLimit);
+        excerpts.push(`<div class="excerpt" data-index="${index}">${textBefore}<mark>${query}</mark>${textAfter}</div>`);
+        displayFullFragment(index, indexes);
       });
       excerptsContainer.innerHTML = excerpts.join('');
       excerptsContainer.style.display = '';
-      console.log('front: excerpts container revealed');
     }
 
-    function displayFullFragment(index) {
+    function displayFullFragment(index, indexes) {
       console.log('front: getting Full Fragment for index ' + index);
       const query = currentSearchQueryInput.value;
       console.log('front: query length: ' + query.length);
       console.log('front: query ', query);
-      
-      console.log('front: textBefore, from, to: ', (Math.max(0, index - fullLimit)), index);
-      const textBefore = currentFileContent.substring(Math.max(0, index - fullLimit), index);
-      console.log('front: textBefore: ', textBefore);
 
-      console.log('front: textAfter, from, to: ', (index + query.length), Math.min(index + query.length + fullLimit, currentFileContent.length));
-      const textAfter = currentFileContent.substring(index + query.length, Math.min(index + query.length + fullLimit, currentFileContent.length));
-      console.log('front: textAfter: ', textAfter);
-      
-      fullPreviewEl.innerHTML = `${textBefore}<strong data-index="${index}">${query}</strong>${textAfter}`;
-      
+      const textBefore = highlightOccurrences(currentFileContent.substring(Math.max(0, index - fullLimit), index), query);
+      const textAfter = highlightOccurrences(currentFileContent.substring(index + query.length, Math.min(index + query.length + fullLimit, currentFileContent.length)), query);
+
+      fullPreviewEl.innerHTML = `${textBefore}<mark data-index="${index}">${query}</mark>${textAfter}`;
+
       const currentMatch = fullPreviewEl.querySelector('[data-index="' + index + '"]');
       fullPreviewEl.style.display = '';
-      const targetScrollTop = currentMatch.offsetTop - currentMatch.offsetHeight - (fullPreviewOuter.offsetHeight/2)
+      const targetScrollTop = getInnerElScrollTopToCenterOfOuter(fullPreviewOuter, currentMatch);
       fullPreviewOuter.scrollTo({
         top: targetScrollTop,
         behavior: 'smooth'
@@ -356,6 +341,41 @@ END
       }
     });
 
+    function findTagsWithContext(text, contextLength, tagName) {
+      /*
+      {
+        tag: '<div>DIV</div>',
+        before: 'Теги: ',
+        after: ' и <',
+        start: 6,
+        end: 18
+      }      
+      */
+      const regex = new RegExp(
+        `<${tagName}(?:\\s[^>]*)?>.*?<\\/${tagName}>`,
+        'g'
+      );
+      const results = [];
+      let match;
+
+      while ((match = regex.exec(text)) !== null) {
+        const start = match.index;
+        const end = start + match[0].length;
+
+        results.push({
+          tag: match[0],
+          before: text.slice(Math.max(0, start - contextLength), start),
+          after: text.slice(end, end + contextLength),
+          start,
+          end
+        });
+
+        if (match.index === regex.lastIndex) regex.lastIndex++;
+      }
+
+      return results;
+    }
+
     function escapeRegExp(string) {
       return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     }
@@ -367,7 +387,6 @@ END
 
       while ((match = regex.exec(text)) !== null) {
         results.push(match.index);
-        // Для избежания бесконечного цикла при нулевой длине совпадения
         if (match.index === regex.lastIndex) {
           regex.lastIndex++;
         }
@@ -376,15 +395,26 @@ END
       return results;
     }
 
+    function highlightOccurrences(text, searchString) {
+      if (!searchString) return text;
+      const regex = new RegExp(escapeRegExp(searchString), 'gi');
+      let matchCount = 0;
+      return text.replace(regex, (match) => {
+        return `<mark>${match}</mark>`;
+      });
+    }
+
     window.onIndexProgress = function (fileName, percent) {
       console.log('front: onIndexProgress ' + percent);
-      document.getElementById('fileName').textContent = "Файл: " + fileName;
-      document.getElementById('progressBar').value = percent;
+      progressFileNameEl.textContent = "Файл: " + fileName;
+      progressBarEl.value = percent;
     }
 
     function onIndexDone(data) {
       renderIndexedFolders(data);
-      indexPregressContainer.classList.add('hidden');
+      progressFileNameEl.textContent = "Файл: ";
+      progressBarEl.value = 0;
+      indexProgressContainer.classList.add('hidden');
     }
 
     function renderIndexedFolders(data) {
@@ -392,21 +422,59 @@ END
       if (looksLikeJSON(data)) {
         allFoldersRes = JSON.parse(data).map(o => {
           return `
-          <li><input type="checkbox" name="indexFolder" value="${o.id}">&nbsp;${o.path}</li>
+          <li><input type="checkbox" name="indexFolder" value="${o.path}">&nbsp;${o.path}</li>
         `
         }).join('');
       } else {
         allFoldersRes = data;
       }
-      indexResultEl.innerHTML = `
-      <h5>Indexed folders</h5>
-      <ul id="indexedFoldersList">
-        ${allFoldersRes}
-      </ul>
-    `;
+      indexedFildersListEl.innerHTML = allFoldersRes;
+      indexedFildersListEl.classList.toggle('hidden', !allFoldersRes.length);
+      deleteIndexesForFoldersButton.classList.toggle('hidden', !allFoldersRes.length);
     }
 
     renderIndexedFolders(Android.getIndexedFolders());
+
+    function deleteIndexForSelectedFolders() {
+      const selectedPaths = [...indexedFildersListEl.querySelectorAll('[type="checkbox"]:checked')].map(el => el.value);
+      const result = Android.deleteIndexesForPaths(JSON.stringify(selectedPaths));
+      if (result) {
+        renderIndexedFolders(result);
+      }
+    }
+
+    function clearDB() {
+      renderIndexedFolders(Android.clearDB())
+    }
+
+    function shiftPreview(goDown) {
+      console.log('front: shiftPreview', goDown);
+      const current = excerptsContainer.querySelector('.current');
+      console.log('front: current excerpt', current);
+      let next = null;
+      if (goDown) {
+        next = current ? current.nextElementSibling ? current.nextElementSibling : null : excerptsContainer.querySelector('.excerpt').nextElementSibling;
+      } else {
+        next = current ? current.previousElementSibling ? current.previousElementSibling : null : null;
+      }
+      console.log('front: next excerpt', next);
+      if (next) {
+        next.click();
+        excerptsOuter.scrollTop = getInnerElScrollTopToCenterOfOuter(excerptsOuter, next);
+      }
+    }
+
+    function getStringSizeInKB(str) {
+      return (new Blob([str]).size) / 1024;
+    }
+
+    function getInnerElScrollTopToCenterOfOuter(outer, inner) {
+      const innerRect = inner.getBoundingClientRect();
+      const outerRect = outer.getBoundingClientRect();
+      const relativeTop = innerRect.top - outerRect.top + outer.scrollTop;
+      const targetScroll = relativeTop - (outer.clientHeight / 2) + (inner.clientHeight / 2);
+      return Math.min(targetScroll, outer.scrollHeight - outer.clientHeight)
+    }    
   </script>
 </body>
 

@@ -58,9 +58,10 @@ public class FileIndexer {
 
         int fileId;
         fileId = db.getFileId(file.getAbsolutePath());
-        Log.d(WebAppInterface.TAG, "tokenize");
-        List<Token> tokens = tokenizer.tokenize(content);
-        Log.d(WebAppInterface.TAG, "Tokens ready: " + tokens.size() + "; inserting into db");
+        Log.d(WebAppInterface.TAG, "tokenize and insert");
+        //List<Token> tokens = tokenizer.tokenize(content);
+        tokenizer.tokenizeAndInsertStreaming(content, fileId, conn, dict);
+        /*
         String sql = "INSERT INTO tokens (token_id, file_id, positions) VALUES (?, ?, ?)";
         SQLiteStatement stmt = conn.compileStatement(sql);
 
@@ -76,13 +77,16 @@ public class FileIndexer {
                 Log.e(WebAppInterface.TAG, "Ошибка вставки токена: " + token.text, e);
             }
         }
-        Log.d(WebAppInterface.TAG, "tokens inserted");
+
         stmt.close();
+        */
+        Log.d(WebAppInterface.TAG, "tokens inserted");
     }
 
     public void indexFileIfNeeded(File file) throws SQLException, IOException {
         Log.d(WebAppInterface.TAG, "indexFileIfNeeded");
         String content = db.updateFileMetadata(file);
+        Log.d(WebAppInterface.TAG, "file content received");
         if (content != null) {
             indexFile(file, content);
         }

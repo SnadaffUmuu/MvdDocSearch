@@ -24,6 +24,7 @@ public class DatabaseManager {
         this.context = context;
         String dbPath = context.getFilesDir().getAbsolutePath() + "/index.db";
         this.db = SQLiteDatabase.openOrCreateDatabase(dbPath, null);
+        db.execSQL("PRAGMA foreign_keys = ON;");
     }
 
     public SQLiteDatabase getConnection() {
@@ -49,7 +50,7 @@ public class DatabaseManager {
                     "token_id INTEGER, " +
                     "file_id INTEGER NOT NULL, " +
                     "positions TEXT NOT NULL, " +
-                    "FOREIGN KEY(file_id) REFERENCES files(id), " +
+                    "FOREIGN KEY(file_id) REFERENCES files(id) ON DELETE CASCADE, " +
                     "FOREIGN KEY(token_id) REFERENCES dict(id));");
 
             Log.d(WebAppInterface.TAG, "create indexed_folders if not exists");
@@ -69,6 +70,14 @@ public class DatabaseManager {
             e.printStackTrace(new PrintWriter(sw));
             Log.e(WebAppInterface.TAG, sw.toString());
         }
+    }
+
+    public void clearTables() {
+        db.execSQL("DELETE FROM tokens;");
+        db.execSQL("DELETE FROM files;");
+        db.execSQL("DELETE FROM dict;");
+        db.execSQL("DELETE FROM indexed_folders;");
+        Log.d(WebAppInterface.TAG, "[INFO] База очищена");
     }
 
     public String updateFileMetadata(File file) throws IOException {
@@ -110,6 +119,7 @@ public class DatabaseManager {
                 stmt.executeInsert();
 
                 Log.d(WebAppInterface.TAG, "[INFO] Новый файл: " + filePath);
+                Log.d(WebAppInterface.TAG, "Try to read the content now...");
                 return new String(Files.readAllBytes(file.toPath()), StandardCharsets.UTF_8);
             }
         } finally {
@@ -129,8 +139,6 @@ public class DatabaseManager {
                     file.put("path", cursor.getString(cursor.getColumnIndexOrThrow("path")));
                     files.add(file);
                 } while (cursor.moveToNext());
-            } else {
-                throw new RuntimeException("Ошибка при чтении из таблицы indexed_files");
             }
         } finally {
             cursor.close();
@@ -199,6 +207,45 @@ public class DatabaseManager {
         SQLiteStatement stmt = db.compileStatement(insertSql);
         stmt.bindString(1, folder.getAbsolutePath());
         stmt.executeInsert();
+    }
+
+    public void deleteIndexForPath (String prefix) {
+        Log.d(WebAppInterface.TAG, "deleteIndexForPath called for folder: " + prefix);
+        String safePrefix = prefix
+                .replace("\\", "\\\\")
+                .replace("%", "\\%")
+                .replace("_", "\\_");
+
+        String likeArg = safePrefix + "%";
+
+        Cursor cursor = null;
+        try {
+            cursor = db.rawQuery(
+                    "SELECT COUNT(*) FROM files WHERE path LIKE ? ESCAPE '\\'",
+                    new String[]{likeArg}
+            );
+            if (cursor.moveToFirst()) {
+                int count = cursor.getInt(0);
+                Log.d(WebAppInterface.TAG, "Найдено для удаления из files: " + count + " записей");
+            }
+
+            int deletedFiles = db.delete(
+                    "files",
+                    "path LIKE ? ESCAPE '\\'",
+                    new String[]{likeArg}
+            );
+            Log.d(WebAppInterface.TAG, "Удалено из files: " + deletedFiles + " строк");
+
+            int deletedFolders = db.delete(
+                    "indexed_folders",
+                    "path = ?",
+                    new String[]{prefix}
+            );
+            Log.d(WebAppInterface.TAG, "Удалено из indexed_folders: " + deletedFolders + " строк");
+        } finally {
+            if (cursor != null) cursor.close();
+        }
+
     }
 
     public boolean rootExists(File folder) {
