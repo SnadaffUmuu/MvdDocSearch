@@ -3,10 +3,6 @@ package com.mvd.docsearchmvd.search;
 import com.mvd.docsearchmvd.WebAppInterface;
 import com.mvd.docsearchmvd.db.DatabaseManager;
 
-import java.io.File;
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.sql.SQLException;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -21,9 +17,11 @@ public class SearchEngine {
         this.db = db;
     }
 
-    public List<Hit> search(String query) throws SQLException {
+    public List<Hit> search(String initialQuery) throws SQLException {
 
-        Log.d(WebAppInterface.TAG, "Searching text: " + query);
+        Log.d(WebAppInterface.TAG, "Searching text: " + initialQuery);
+
+        String query = initialQuery.toLowerCase(Locale.ROOT);
 
         List<String> queryTokens = new ArrayList<>();
         int pos = 0;
@@ -84,7 +82,7 @@ public class SearchEngine {
             }
 
             if (matched) {
-                int hitCount = base.size(); // столько раз фраза встретилась в файле
+                int hitCount = base.size();
                 String path = db.getFilePath(fileId);
                 result.add(new Hit(fileId, path, hitCount));
             }

@@ -43,7 +43,7 @@ public class WebAppInterface {
     @JavascriptInterface
     public String doSearch(String query) {
         try {
-            DatabaseManager db = new DatabaseManager(context);
+            DatabaseManager db = ((MainActivity) context).getDbManager();
             SearchEngine se = new SearchEngine(db);
             List<Hit> results = se.search(query);
             Log.d(TAG, "results num: " + results.size());
@@ -66,66 +66,45 @@ public class WebAppInterface {
             e.printStackTrace(new PrintWriter(sw));
             return "Ошибка чтения файла" + path + "<br>" + sw.toString();
         }
-      /*
-
-BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(file), charset));
-Deque<String> backLines = new LinkedList<>();
-StringBuilder backBuffer = new StringBuilder();
-List<String> results = new ArrayList<>();
-
-String line;
-while ((line = reader.readLine()) != null) {
-    int index = line.indexOf(searchTerm);
-    while (index != -1) {
-        String before = backBuffer.length() > 100 ?
-            backBuffer.substring(backBuffer.length() - 100) : backBuffer.toString();
-        int afterEnd = Math.min(line.length(), index + searchTerm.length() + 100);
-        String after = line.substring(index, afterEnd);
-        results.add(before + after);
-        index = line.indexOf(searchTerm, index + 1);
-    }
-
-    // Обновляем буфер
-    backLines.add(line);
-    backBuffer.append(line).append("\n");
-    while (backBuffer.length() > 300) {
-        String removed = backLines.removeFirst();
-        backBuffer.delete(0, removed.length() + 1); // +1 из-за \n
-    }
-}
-
-       */
     }
 
     @JavascriptInterface
     public String deleteIndexesForPaths (String jsonArrayString) {
+        DatabaseManager db = ((MainActivity) context).getDbManager();
+        db.getConnection().beginTransaction();
         try {
-            DatabaseManager db = new DatabaseManager(context);
             List<String> paths = gson.fromJson(jsonArrayString, new TypeToken<List<String>>(){}.getType());
             Log.d(WebAppInterface.TAG, "deleting indexes for paths: " + jsonArrayString);
             for (String path : paths) {
                 db.deleteIndexForPath(path);
             }
             Log.d(WebAppInterface.TAG, "deleting indexes finished, returning folders...");
+            db.getConnection().setTransactionSuccessful();
             return gson.toJson(db.getAllFolders());
         } catch (Exception e) {
             StringWriter sw = new StringWriter();
             e.printStackTrace(new PrintWriter(sw));
             Log.e(TAG, "Error deleting indexes for folders: " + sw.toString());
+        } finally {
+            db.getConnection().endTransaction();
         }
         return null;
     }
 
     @JavascriptInterface
     public String clearDB() {
+        DatabaseManager db = ((MainActivity) context).getDbManager();
+        db.getConnection().beginTransaction();
         try {
-            DatabaseManager db = new DatabaseManager(context);
             db.clearTables();
+            db.getConnection().setTransactionSuccessful();
             return gson.toJson(db.getAllFolders());
         } catch (Exception e) {
             StringWriter sw = new StringWriter();
             e.printStackTrace(new PrintWriter(sw));
             Log.e(TAG, "Error clearing DB: " + sw.toString());
+        } finally {
+            db.getConnection().endTransaction();
         }
         return null;
     }
@@ -148,7 +127,7 @@ while ((line = reader.readLine()) != null) {
                 });
             }
 
-            DatabaseManager db = new DatabaseManager(context);
+            DatabaseManager db = ((MainActivity) context).getDbManager();
             FileIndexer fileIndexer = new FileIndexer(db, context);
 
             fileIndexer.setProgressListener((fileName, done, total, elapsedSeconds) -> {
@@ -160,7 +139,6 @@ while ((line = reader.readLine()) != null) {
                 webView.post(() -> webView.evaluateJavascript(js, null));
             });
 
-            // Запуск в отдельном потоке
             new Thread(() -> {
                 File[] folders = new File[] { folder };
                 try {
@@ -196,7 +174,7 @@ while ((line = reader.readLine()) != null) {
 
     @JavascriptInterface
     public String getIndexedFolders() {
-        DatabaseManager db = new DatabaseManager(context);
+        DatabaseManager db = ((MainActivity) context).getDbManager();
         return gson.toJson(db.getAllFolders());
     }
 

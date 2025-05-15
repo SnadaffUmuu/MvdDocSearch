@@ -1,6 +1,5 @@
 package com.mvd.docsearchmvd.indexer;
 
-import androidx.documentfile.provider.DocumentFile;
 import android.content.Context;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteStatement;
@@ -27,6 +26,9 @@ public class FileIndexer {
             "js",
             "fb2"
     };
+    private final String[] pathExceptions = {
+            "."
+    };
     private final Context context;
     private IndexProgressListener progressListener;
     private int totalFiles = 0;
@@ -52,6 +54,11 @@ public class FileIndexer {
     private boolean isAllowedExtension(File file) {
         String name = file.getName().toLowerCase();
         return Arrays.stream(extensions).anyMatch(name::endsWith);
+    }
+
+    private boolean toExclude(File res) {
+        String name = res.getName().toLowerCase();
+        return Arrays.stream(pathExceptions).anyMatch(name::startsWith);
     }
 
     private void indexFile(File file, String content) {
@@ -124,7 +131,6 @@ public class FileIndexer {
         try {
             for (File file : allFiles) {
                 Log.d(WebAppInterface.TAG, file.getAbsolutePath());
-                //indexFilesInDirectory(dir);
                 indexFileIfNeeded(file);
                 filesDone++;
                 long elapsed = (System.currentTimeMillis() - startTime) / 1000;
@@ -162,14 +168,14 @@ public class FileIndexer {
     }
 
     private void walk(File file, List<File> result) {
-        if (file.isDirectory()) {
+        if (file.isDirectory() && !toExclude(file)) {
             Log.d(WebAppInterface.TAG, "file is folder:" + file.getAbsolutePath());
             File[] files = file.listFiles();
             Log.d(WebAppInterface.TAG, "the folder contains files: " + files.length);
             if (files != null) {
                 for (File f : files) walk(f, result);
             }
-        } else if (file.isFile() && file.canRead() && isAllowedExtension(file)) {
+        } else if (file.isFile() && file.canRead() && !toExclude(file) && isAllowedExtension(file)) {
             Log.d(WebAppInterface.TAG, "adding file: " + file.getAbsolutePath());
             result.add(file);
         }

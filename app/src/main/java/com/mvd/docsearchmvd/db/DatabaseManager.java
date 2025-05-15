@@ -73,7 +73,6 @@ public class DatabaseManager {
     }
 
     public void clearTables() {
-        db.execSQL("DELETE FROM tokens;");
         db.execSQL("DELETE FROM files;");
         db.execSQL("DELETE FROM dict;");
         db.execSQL("DELETE FROM indexed_folders;");

@@ -34,7 +34,7 @@
   }
 
   mark[data-index] {
-    border-bottom:1px dotted #ccc;
+    border-bottom:1px dotted #7483d4;
   }
 
   section,
@@ -47,6 +47,12 @@
 
   .hidden {
     display: none;
+  }
+
+  #queryValidationMessage {
+    font-size:12px;
+    padding:5px 0;
+    color:#66001a;
   }
 
   #searchResultWrap {
@@ -176,7 +182,8 @@
   </section>
   <div class="view">
     <h4>Search</h4>
-    <input type="search" id="searchQuery">&nbsp;<button onclick="doSearch()">Search</button><br>
+    <input type="search" id="searchQuery" oninput="validateQuery(this)">&nbsp;<button id="searchButton" onclick="doSearch()">Search</button><br>
+    <div id="queryValidationMessage" class="hidden">Поиск не поддерживает пробелы, знаки препинания и эмодзи</div>
     <input type="hidden" id="currentSearchQuery">
     <h4>Search result: </h4>
     <div id="searchResultWrap">
@@ -219,6 +226,8 @@
     const progressBarEl = document.getElementById('progressBar');
     const progressFileNameEl = document.getElementById('fileName');
     const progressElapsedEl = document.getElementById('elapsed');
+    const queryValidationMessageEl = document.getElementById('queryValidationMessage');
+    const searchButton = document.getElementById('searchButton');
 
     let currentFileContent = null;
     let highlightedContent = null;
@@ -227,10 +236,20 @@
     function doSearch() {
       console.log('front: starting search');
       if (!searchQueryEl.value.trim()) return;
+      if (containsDisallowedCharacters(searchQueryEl.value.trim())) {
+        toggleQueryValidationMessage(true);
+        return;
+      }
       searchResult.innerHTML = '';
       excerptsContainer.innerHTML = '';
       fullPreviewEl.innerHTML = '';
+      previewsEl.scroll({
+        left: 0,
+        behavior: 'smooth'
+      })      
+      console.log('front: doSearch, query: ' + searchQueryEl.value);
       currentSearchQueryInput.value = searchQueryEl.value;
+      
       const res = Android.doSearch(searchQueryEl.value.trim());
       console.log('front: search result: ', res);
       if (looksLikeJSON(res)) {
@@ -271,7 +290,7 @@
     function showExcerpts(path) {
       console.log('front: loading file content', path);
       const query = currentSearchQueryInput.value;
-
+      
       currentFileContent = Android.getFileContent(path);
 
       excerptsContainer.innerHTML = '';
@@ -285,11 +304,11 @@
 
       const excerpts = [];
       const indexes = findAllOccurrencesWithPositions(currentFileContent, query);
-
       indexes.forEach((index, i) => {
         const textBefore = currentFileContent.substring(Math.max(0, index - shortLimit), index);
         const textAfter = currentFileContent.substring(index + query.length, index + query.length + shortLimit);
-        excerpts.push(`<div class="excerpt" data-index="${index}">${textBefore}<mark>${query}</mark>${textAfter}</div>`);
+        const trueQuery = currentFileContent.substring(index, index + query.length);
+        excerpts.push(`<div class="excerpt" data-index="${index}">${textBefore}<mark>${trueQuery}</mark>${textAfter}</div>`);
         displayFullFragment(index, indexes);
       });
       excerptsContainer.innerHTML = excerpts.join('');
@@ -299,21 +318,16 @@
     function displayFullFragment(index, indexes) {
       console.log('front: getting Full Fragment for index ' + index);
       const query = currentSearchQueryInput.value;
-      console.log('front: query length: ' + query.length);
-      console.log('front: query ', query);
 
       const textBefore = highlightOccurrences(currentFileContent.substring(Math.max(0, index - fullLimit), index), query);
       const textAfter = highlightOccurrences(currentFileContent.substring(index + query.length, Math.min(index + query.length + fullLimit, currentFileContent.length)), query);
-
-      fullPreviewEl.innerHTML = `${textBefore}<mark data-index="${index}">${query}</mark>${textAfter}`;
+      const trueQuery = currentFileContent.substring(index, index + query.length);
+      fullPreviewEl.innerHTML = `${textBefore}<mark data-index="${index}">${trueQuery}</mark>${textAfter}`;
 
       const currentMatch = fullPreviewEl.querySelector('[data-index="' + index + '"]');
       fullPreviewEl.style.display = '';
       const targetScrollTop = getInnerElScrollTopToCenterOfOuter(fullPreviewOuter, currentMatch);
-      fullPreviewOuter.scrollTo({
-        top: targetScrollTop,
-        behavior: 'smooth'
-      });
+      fullPreviewOuter.scrollTop = targetScrollTop;
     }
 
     function looksLikeJSON(str) {
@@ -384,7 +398,7 @@
     }
 
     function findAllOccurrencesWithPositions(text, searchString) {
-      const regex = new RegExp(escapeRegExp(searchString), 'g');
+      const regex = new RegExp(escapeRegExp(searchString), 'gi');
       let match;
       const results = [];
 
@@ -400,7 +414,7 @@
 
     function highlightOccurrences(text, searchString) {
       if (!searchString) return text;
-      const regex = new RegExp(escapeRegExp(searchString), 'gi');
+      const regex = new RegExp(escapeRegExp(searchString), 'g');
       let matchCount = 0;
       return text.replace(regex, (match) => {
         return `<mark>${match}</mark>`;
@@ -474,7 +488,31 @@
       const relativeTop = innerRect.top - outerRect.top + outer.scrollTop;
       const targetScroll = relativeTop - (outer.clientHeight / 2) + (inner.clientHeight / 2);
       return Math.min(targetScroll, outer.scrollHeight - outer.clientHeight)
-    }    
+    }  
+    
+    function toggleQueryValidationMessage(show) {
+      queryValidationMessageEl.classList.toggle('hidden', !show);
+    }
+
+    function containsDisallowedCharacters(str) {
+      const punctuationOrSymbol = /[\p{P}\p{So}ー々〆〤\u3000\u3001\u3002\u300C\u300D\u300E\u300F]/u;
+      const emoji = /[\uD83C-\uDBFF][\uDC00-\uDFFF]/;
+      const whitespace = /\s/;
+      return punctuationOrSymbol.test(str) || emoji.test(str) || whitespace.test(str);
+    }
+
+    function validateQuery(input) {
+      toggleQueryValidationMessage(containsDisallowedCharacters(input.value.trim()));
+      searchButton.toggleAttribute('disabled', containsDisallowedCharacters(input.value.trim()))
+    }
+  
+    function handleSearchFromAndroid(query) {
+      console.log('front: received search query from Android');
+      searchQueryEl.value = query;
+      searchQueryEl.dispatchEvent(new Event('input'));
+      searchButton.click();
+      searchButton.dispatchEvent(new Event('click'))
+    }
   </script>
 </body>
 

@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.regex.Pattern;
 import com.mvd.docsearchmvd.util.Util;
@@ -29,14 +30,16 @@ public class Tokenizer {
 
             if (Character.isWhitespace(ch)
                     || PUNCTUATION_OR_SYMBOL.matcher(chStr).matches()
-                    || EMOJI.matcher(chStr).matches()) {
+                    || EMOJI.matcher(chStr).matches()
+                    || Character.isDigit(ch)) {
                 pos++;
                 continue;
             }
 
             int start = pos;
+            boolean isWord = Util.isAsciiLetterOrCyrillicOrDigit(ch);
 
-            if (Util.isAsciiLetterOrCyrillicOrDigit(ch)) {
+            if (isWord) {
                 while (pos < chars.length && Util.isAsciiLetterOrCyrillicOrDigit(chars[pos])) {
                     pos++;
                 }
@@ -45,6 +48,9 @@ public class Tokenizer {
             }
 
             String tokenStr = new String(chars, start, pos - start);
+            if (isWord) {
+                tokenStr = tokenStr.toLowerCase(Locale.ROOT);
+            }
             tokenMap.computeIfAbsent(tokenStr, k -> new IntList()).add(start);
         }
 
