@@ -31,6 +31,7 @@ public class FileIndexer {
     private IndexProgressListener progressListener;
     private int totalFiles = 0;
     private int filesDone = 0;
+    private long startTime;
 
     public FileIndexer(DatabaseManager db, Context context) throws SQLException {
         this.context = context;
@@ -41,7 +42,7 @@ public class FileIndexer {
     }
 
     public interface IndexProgressListener {
-        void onFileIndexed(String fileName, int filesDone, int totalFiles);
+        void onFileIndexed(String fileName, int filesDone, int totalFiles, long elapsedSeconds);
     }
 
     public void setProgressListener(IndexProgressListener listener) {
@@ -59,9 +60,8 @@ public class FileIndexer {
         int fileId;
         fileId = db.getFileId(file.getAbsolutePath());
         Log.d(WebAppInterface.TAG, "tokenize and insert");
-        //List<Token> tokens = tokenizer.tokenize(content);
-        tokenizer.tokenizeAndInsertStreaming(content, fileId, conn, dict);
-        /*
+        List<Token> tokens = tokenizer.tokenize(content);
+
         String sql = "INSERT INTO tokens (token_id, file_id, positions) VALUES (?, ?, ?)";
         SQLiteStatement stmt = conn.compileStatement(sql);
 
@@ -79,7 +79,7 @@ public class FileIndexer {
         }
 
         stmt.close();
-        */
+
         Log.d(WebAppInterface.TAG, "tokens inserted");
     }
 
@@ -118,6 +118,8 @@ public class FileIndexer {
         totalFiles = allFiles.size();
         Log.d(WebAppInterface.TAG, "allFiles size: " + totalFiles);
         filesDone = 0;
+        startTime = System.currentTimeMillis();
+        Log.d(WebAppInterface.TAG, "Start time: " + startTime);
         conn.beginTransaction();
         try {
             for (File file : allFiles) {
@@ -125,10 +127,12 @@ public class FileIndexer {
                 //indexFilesInDirectory(dir);
                 indexFileIfNeeded(file);
                 filesDone++;
+                long elapsed = (System.currentTimeMillis() - startTime) / 1000;
                 Log.d(WebAppInterface.TAG, "Progress, files Done: " + filesDone);
+                Log.d(WebAppInterface.TAG, "Progress, elapsed: " + elapsed);
                 if (progressListener != null) {
                     Log.d(WebAppInterface.TAG, "calling onFileIndexed");
-                    progressListener.onFileIndexed(file.getName(), filesDone, totalFiles);
+                    progressListener.onFileIndexed(file.getName(), filesDone, totalFiles, elapsed);
                 }
             }
             conn.setTransactionSuccessful();

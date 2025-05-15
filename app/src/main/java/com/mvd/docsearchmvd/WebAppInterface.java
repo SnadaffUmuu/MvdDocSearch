@@ -151,11 +151,11 @@ while ((line = reader.readLine()) != null) {
             DatabaseManager db = new DatabaseManager(context);
             FileIndexer fileIndexer = new FileIndexer(db, context);
 
-            fileIndexer.setProgressListener((fileName, done, total) -> {
-                Log.d(TAG, "setProgressListenerCallback: done: " + done + ", total: " + total);
+            fileIndexer.setProgressListener((fileName, done, total, elapsedSeconds) -> {
+                Log.d(TAG, "setProgressListenerCallback: done: " + done + ", total: " + total + ", elapsed: " + elapsedSeconds);
                 int percent = (int)((done * 100.0) / total);
                 Log.d(TAG, "setProgressListenerCallback: percent: " + percent);
-                String js = String.format("onIndexProgress(\"%s\", %d)", escape(fileName), percent);
+                String js = String.format("onIndexProgress(\"%s\", %d, %d)", escape(fileName), percent, elapsedSeconds);
                 Log.d(TAG, "setProgressListenerCallback: calling js: " + js);
                 webView.post(() -> webView.evaluateJavascript(js, null));
             });

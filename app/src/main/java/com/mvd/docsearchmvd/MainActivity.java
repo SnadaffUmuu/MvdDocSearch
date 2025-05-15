@@ -81,16 +81,6 @@ public class MainActivity extends AppCompatActivity {
         Log.d("MVDMainActivity", "setupWebView is ready to be called");
         setupWebView();
     }
-/*
-    @Override
-    protected void onResume() {
-        super.onResume();
-        Log.d("MVDMainActivity", "onResume");
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R && Environment.isExternalStorageManager()) {
-            setupWebView();
-        }
-    }
- */
 
     private void setupWebView() {
         Log.d("MVDMainActivity", "setupWebView called");
@@ -138,7 +128,7 @@ public class MainActivity extends AppCompatActivity {
         if (requestCode == 101) {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
                 if (Environment.isExternalStorageManager()) {
-                    setupWebView(); // доступ получен — продолжаем
+                    setupWebView();
                 } else {
                     Toast.makeText(this, "Требуется доступ ко всем файлам", Toast.LENGTH_LONG).show();
                 }

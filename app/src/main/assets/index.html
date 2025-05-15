@@ -156,14 +156,15 @@
     <h4>Manage index</h4>
     <input type="hidden" id="currentIndexPath" value="">
     <button onclick="Android.selectFolder()">Выбрать папку</button><br><br>
-    <div id="progressContainer">
-      <p id="fileName">Файл: -</p>
-      <progress id="progressBar" value="0" max="100"></progress>
-    </div>
     <section id="currentIndexWrap">
       <div id="currentIndex"></div>
-      <br><button id="buildIndex">Build Index</button><br><br>
+      <br><button id="buildIndex" onClick="indexFolder()">Build Index</button><br><br>
     </section>
+    <div id="progressContainer">
+      <p id="fileName">Файл: -</p>
+      <p id="elapsed">Time: 0s</p>
+      <progress id="progressBar" value="0" max="100"></progress>
+    </div>
     <section id="indexResultContainer">
       <h5>Indexed folders</h5>
       <button id="deleteIndexesForFolders" class="hidden" onClick="deleteIndexForSelectedFolders()">Delete selected
@@ -202,7 +203,6 @@
     const stringLimit = 80; //kb
     const prefix = "/storage/emulated/0";
 
-    const buildIndexButton = document.getElementById('buildIndex');
     const currentIndexPathInput = document.getElementById('currentIndexPath');
     const currentIndexEl = document.getElementById('currentIndex');
     const indexedFildersListEl = document.getElementById('indexedFoldersList');
@@ -216,8 +216,9 @@
     const fullPreviewOuter = document.getElementById('fullPreviewOuter');
     const fullPreviewEl = document.getElementById('fullPreview');
     const indexProgressContainer = document.getElementById('progressContainer');
-    const progressBarEl = document.getElementById('progressbar');
+    const progressBarEl = document.getElementById('progressBar');
     const progressFileNameEl = document.getElementById('fileName');
+    const progressElapsedEl = document.getElementById('elapsed');
 
     let currentFileContent = null;
     let highlightedContent = null;
@@ -253,16 +254,18 @@
       }
     }
 
-    buildIndexButton.addEventListener('click', (e) => {
+    function indexFolder() {
       console.log('build index button clicked');
-      indexProgressContainer.classList.remove('hidden');
       Android.indexFolder(currentIndexPathInput.value);
-    });
-
+    }
+    
     function onFolderChosen(path) {
       console.log('front: folder chosen', path);
       currentIndexPathInput.value = path;
       currentIndexEl.innerHTML = 'Текущая папка:<br>' + path;
+      progressFileNameEl.textContent = "Файл: -";
+      progressBarEl.value = 0;
+      progressElapsedEl.textContent = 'Time: 0s';
     }
 
     function showExcerpts(path) {
@@ -404,17 +407,14 @@
       });
     }
 
-    window.onIndexProgress = function (fileName, percent) {
-      console.log('front: onIndexProgress ' + percent);
+    window.onIndexProgress = function (fileName, percent, elapsedTime) {
       progressFileNameEl.textContent = "Файл: " + fileName;
+      progressElapsedEl.textContent = "Time: " + elapsedTime + "s";
       progressBarEl.value = percent;
     }
 
     function onIndexDone(data) {
       renderIndexedFolders(data);
-      progressFileNameEl.textContent = "Файл: ";
-      progressBarEl.value = 0;
-      indexProgressContainer.classList.add('hidden');
     }
 
     function renderIndexedFolders(data) {
@@ -422,7 +422,7 @@
       if (looksLikeJSON(data)) {
         allFoldersRes = JSON.parse(data).map(o => {
           return `
-          <li><input type="checkbox" name="indexFolder" value="${o.path}">&nbsp;${o.path}</li>
+          <li><input type="checkbox" name="indexedFolder" value="${o.path}">&nbsp;${o.path}</li>
         `
         }).join('');
       } else {
