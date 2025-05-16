@@ -7,14 +7,44 @@
   <title>Mvd Doc Search Minus</title>
 </head>
 <style>
-  .searchResult {
-    display: block;
-    padding: 5px;
-    margin-bottom: 10px;
-    border-bottom: 1px dashed #ccc;
+  html, body {
+    width: 100vw;
+    height: 100vh;
+    margin: 0;
+    padding: 0;
+  }
+
+  body {
     display: flex;
-    flex-flow: row nowrap;
-    justify-content: space-between;
+    flex-flow: column nowrap;
+  }
+
+  h4,
+  h5 {
+    margin: 10px 0;
+  }
+
+  main {
+    box-sizing: border-box;
+    padding: 5px;
+    width: 100%;
+    max-width: 100%;
+    min-height: 0;
+    overflow: auto;
+    position: relative;
+    flex: 1 1 auto;
+  }
+
+  .dangerousButton {
+    border:#66001a;
+    color:#66001a;
+  }
+
+  #mainInner {
+    height: 100%;
+    max-height: 100%;
+    box-sizing: border-box;
+    padding-top:10px;
   }
 
   .excerpt {
@@ -34,7 +64,7 @@
   }
 
   mark[data-index] {
-    border-bottom:1px dotted #7483d4;
+    border-bottom: 1px dotted #7483d4;
   }
 
   section,
@@ -44,40 +74,54 @@
     padding: 5px;
     margin-bottom: 5px;
   }
-
-  .hidden {
-    display: none;
+  
+  button {
+    height:30px;
   }
 
-  #queryValidationMessage {
-    font-size:12px;
-    padding:5px 0;
-    color:#66001a;
+  .hidden {
+    display: none !important;
+  }
+
+  #queryValidationMessage,
+  #error {
+    font-size: 12px;
+    padding: 5px 0;
+    color: #66001a;
+  }
+
+  #searchQuery {
+    flex: 1 0 auto;
+    margin-right:10px;
   }
 
   #searchResultWrap {
     max-height: 40vh;
     overflow: auto;
+    margin:10px 0;
+    box-sizing: border-box;
   }
 
   .searchResult {
-    display:flex;
-    flex-flow:row nowrap;
-    padding:5px 0;
+    padding: 5px;
+    border-bottom: 1px dashed #ccc;
+    display: flex;
+    flex-flow: row nowrap;
+    justify-content: space-between;
   }
 
   .searchResult_details {
     flex: 1 0 auto;
-    padding-right:5px;
+    padding-right: 5px;
   }
 
   .searchResult_path {
-    font-size:12px;
+    font-size: 12px;
     overflow: hidden;
   }
 
-  .searchResult_details > span {
-    display:block;
+  .searchResult_details>span {
+    display: block;
   }
 
   .searchResult_hits {
@@ -136,7 +180,7 @@
     width: 100%;
     box-sizing: border-box;
     background: rgb(255 215 232 / 33%);
-    border:0;
+    border: 0;
     left: 0;
     right: 0;
     z-index: 100;
@@ -155,55 +199,152 @@
     font-family: sans-serif;
     white-space: pre-wrap;
   }
+
+  #error {
+    position: fixed;
+    bottom: 5px;
+    left: 10px;
+    right: 10px;
+    text-align: center;
+  }
+
+  #menu {
+    padding: 5px;
+    height:30px;
+  }
+
+  #manageIndex {
+    padding: 10px;
+    height: 100%;
+    max-height: 100%;
+    overflow: hidden;
+    box-sizing: border-box;
+  }
+
+  .modal {
+    z-index: 500;
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    border: 10px solid rgba(0, 0, 0, 0.233);
+    background: #eee;
+  }
+
+  #indexedFoldersListContainer {
+    overflow: auto;
+  }
+
+  #indexResultContainer {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: auto;
+  }
+
+  .minimalRow, .minimalCol {
+    flex: 0 0 auto;
+  }
+
+  .colFlexContainer {
+    display: flex;
+    flex-flow: row nowrap;
+    align-items: stretch;
+  }
+
+  .rowFlexContainer {
+    display: flex;
+    flex-flow: column nowrap;
+    align-items: stretch;
+  }
+
+  .justified {
+    justify-content: space-between;
+  }
+
+  .centered {
+    align-items:center !important;
+  }
+
+  .closeModalButton {
+    width: 30px;
+    height: 30px;
+    border-radius: 10px;
+    border: 1px solid #ccc;
+    content: 'X';
+    text-align: center;
+    vertical-align: 29px;
+    position: absolute;
+    bottom: 5px;
+    right: 5px;
+  }
 </style>
 
-<body>
-  <section class="view" id="manageIndex">
-    <h4>Manage index</h4>
-    <input type="hidden" id="currentIndexPath" value="">
-    <button onclick="Android.selectFolder()">Выбрать папку</button><br><br>
-    <section id="currentIndexWrap">
-      <div id="currentIndex"></div>
-      <br><button id="buildIndex" onClick="indexFolder()">Build Index</button><br><br>
-    </section>
-    <div id="progressContainer">
-      <p id="fileName">Файл: -</p>
-      <p id="elapsed">Time: 0s</p>
-      <progress id="progressBar" value="0" max="100"></progress>
+<body class="rowFlexContainer">
+  <header id="menu" class="colFlexContainer minimalRow justified">
+    <button onclick="toggleModalView('#manageIndex')">index</button>
+    <button>prefs</button>
+  </header>
+  <div id="manageIndex" class="rowFlexContainer modal hidden">
+    <div class="minimalRow">
+      <input type="hidden" id="currentIndexPath" value="">
+      <section class="colFlexContainer justified">
+        <button onclick="Android.selectFolder()">Выбрать папку</button>
+        <button id="buildIndex" onClick="indexFolder()">Build Index</button>
+      </section>
+      <section id="currentIndexWrap">
+        <div id="currentIndex"></div>
+      </section>
+      <section id="progressContainer">
+        <div id="fileName">Файл: -</div>
+        <div id="elapsed">Time: 0s</div>
+        <progress id="progressBar" value="0" max="100"></progress>
+      </section>
     </div>
-    <section id="indexResultContainer">
-      <h5>Indexed folders</h5>
-      <button id="deleteIndexesForFolders" class="hidden" onClick="deleteIndexForSelectedFolders()">Delete selected
-        indexes</button>
-      <ul id="indexedFoldersList" class="hidden"></ul>
-    </section>
-    <button onclick="Android.exportDB()">Export DB</button><br><br>
-    <button onclick="clearDB()">Clear DB </button><br><br>
-  </section>
-  <div class="view">
-    <h4>Search</h4>
-    <input type="search" id="searchQuery" oninput="validateQuery(this)">&nbsp;<button id="searchButton" onclick="doSearch()">Search</button><br>
-    <div id="queryValidationMessage" class="hidden">Поиск не поддерживает пробелы, знаки препинания и эмодзи</div>
-    <input type="hidden" id="currentSearchQuery">
-    <h4>Search result: </h4>
-    <div id="searchResultWrap">
-      <div id="searchResult"></div>
-    </div>
-    <div id="previews">
-      <div id="previewColsWrap">
-        <div class="previewColumn" id="excerptsOuter">
-          <div id="excerpts"></div>
+    <section id="indexResultContainer" class="rowFlexContainer">
+      <section class="minimalRow">
+        <div class="colFlexContainer justified">
+          <h5>Indexed folders</h5>
+          <button id="deleteIndexesForFolders" class="hidden dangerousButton" onClick="deleteIndexForSelectedFolders()">Delete selected</button>
         </div>
-        <div class="previewColumn" id="fullPreviewOuter">
-          <button class="previewNav" id="prevChunk" onClick="shiftPreview(false)"></button>
-          <div id="fullPreview">
-
+      </section>
+      <section id="indexedFoldersListContainer">
+        <ul id="indexedFoldersList" class="hidden"></ul>
+      </section>
+    </section>
+    <section class="minimalRow colFlexContainer justified">
+      <button onclick="Android.updateIndex()">Update</button>
+      <button onclick="Android.rebuildIndex()">Rebuild</button>
+      <button onclick="Android.exportDB()">Export</button>
+      <button onclick="clearDB()" class="dangerousButton">Clear</button>
+    </section>
+  </div>
+  <main>
+    <div id="mainInner">
+      <div class="colFlexContainer justified">
+        <input type="search" id="searchQuery" oninput="validateQuery(this)">
+        <button id="searchButton" class="minimalCol" onclick="doSearch()">Search</button>
+      </div>
+      <div id="queryValidationMessage" class="hidden">Поиск не поддерживает пробелы, знаки препинания и эмодзи</div>
+      <input type="hidden" id="currentSearchQuery">
+      <div id="searchResultWrap">
+        <div id="searchResult"></div>
+      </div>
+      <div id="previews">
+        <div id="previewColsWrap">
+          <div class="previewColumn" id="excerptsOuter">
+            <div id="excerpts"></div>
           </div>
-          <button class="previewNav" id="nextChunk" onClick="shiftPreview(true)"></button>
+          <div class="previewColumn" id="fullPreviewOuter">
+            <button class="previewNav" id="prevChunk" onClick="shiftPreview(false)"></button>
+            <div id="fullPreview"></div>
+            <button class="previewNav" id="nextChunk" onClick="shiftPreview(true)"></button>
+          </div>
         </div>
       </div>
     </div>
-  </div>
+  </main>
+  <div id="error" class="hidden"></div>
   <script>
     const shortLimit = 50;
     const fullLimit = 500;
@@ -228,6 +369,7 @@
     const progressElapsedEl = document.getElementById('elapsed');
     const queryValidationMessageEl = document.getElementById('queryValidationMessage');
     const searchButton = document.getElementById('searchButton');
+    const errorContainer = document.getElementById('error');
 
     let currentFileContent = null;
     let highlightedContent = null;
@@ -246,11 +388,12 @@
       previewsEl.scroll({
         left: 0,
         behavior: 'smooth'
-      })      
+      })
       console.log('front: doSearch, query: ' + searchQueryEl.value);
       currentSearchQueryInput.value = searchQueryEl.value;
-      
+
       const res = Android.doSearch(searchQueryEl.value.trim());
+
       console.log('front: search result: ', res);
       if (looksLikeJSON(res)) {
         searchResultEl.innerHTML = JSON.parse(res).map(o => {
@@ -277,7 +420,7 @@
       console.log('build index button clicked');
       Android.indexFolder(currentIndexPathInput.value);
     }
-    
+
     function onFolderChosen(path) {
       console.log('front: folder chosen', path);
       currentIndexPathInput.value = path;
@@ -290,29 +433,35 @@
     function showExcerpts(path) {
       console.log('front: loading file content', path);
       const query = currentSearchQueryInput.value;
-      
-      currentFileContent = Android.getFileContent(path);
+      const response = JSON.parse(Android.getFileContent(path));
+      if (response.success) {
+        console.log('front: data', response.data);
+        currentFileContent = response.data;
+        excerptsContainer.innerHTML = '';
+        fullPreviewEl.innerHTML = '';
+        excerptsContainer.style.display = 'none';
+        fullPreviewEl.style.display = 'none';
+        previewsEl.scroll({
+          left: 0,
+          behavior: 'smooth'
+        })
 
-      excerptsContainer.innerHTML = '';
-      fullPreviewEl.innerHTML = '';
-      excerptsContainer.style.display = 'none';
-      fullPreviewEl.style.display = 'none';
-      previewsEl.scroll({
-        left: 0,
-        behavior: 'smooth'
-      })
-
-      const excerpts = [];
-      const indexes = findAllOccurrencesWithPositions(currentFileContent, query);
-      indexes.forEach((index, i) => {
-        const textBefore = currentFileContent.substring(Math.max(0, index - shortLimit), index);
-        const textAfter = currentFileContent.substring(index + query.length, index + query.length + shortLimit);
-        const trueQuery = currentFileContent.substring(index, index + query.length);
-        excerpts.push(`<div class="excerpt" data-index="${index}">${textBefore}<mark>${trueQuery}</mark>${textAfter}</div>`);
-        displayFullFragment(index, indexes);
-      });
-      excerptsContainer.innerHTML = excerpts.join('');
-      excerptsContainer.style.display = '';
+        const excerpts = [];
+        const indexes = findAllOccurrencesWithPositions(currentFileContent, query);
+        indexes.forEach((index, i) => {
+          const textBefore = currentFileContent.substring(Math.max(0, index - shortLimit), index);
+          const textAfter = currentFileContent.substring(index + query.length, index + query.length + shortLimit);
+          const trueQuery = currentFileContent.substring(index, index + query.length);
+          excerpts.push(`<div class="excerpt" data-index="${index}">${textBefore}<mark>${trueQuery}</mark>${textAfter}</div>`);
+          displayFullFragment(index, indexes);
+        });
+        excerptsContainer.innerHTML = excerpts.join('');
+        excerptsContainer.style.display = '';
+      } else {
+        console.error('front: getFileContent error:', response.error);
+        console.debug('details :', response.errorDetails);
+        showError(response.error);
+      }
     }
 
     function displayFullFragment(index, indexes) {
@@ -488,8 +637,8 @@
       const relativeTop = innerRect.top - outerRect.top + outer.scrollTop;
       const targetScroll = relativeTop - (outer.clientHeight / 2) + (inner.clientHeight / 2);
       return Math.min(targetScroll, outer.scrollHeight - outer.clientHeight)
-    }  
-    
+    }
+
     function toggleQueryValidationMessage(show) {
       queryValidationMessageEl.classList.toggle('hidden', !show);
     }
@@ -505,7 +654,7 @@
       toggleQueryValidationMessage(containsDisallowedCharacters(input.value.trim()));
       searchButton.toggleAttribute('disabled', containsDisallowedCharacters(input.value.trim()))
     }
-  
+
     function handleSearchFromAndroid(query) {
       console.log('front: received search query from Android');
       searchQueryEl.value = query;
@@ -513,6 +662,36 @@
       searchButton.click();
       searchButton.dispatchEvent(new Event('click'))
     }
+
+    function showError(error) {
+      errorContainer.textContent = error;
+      errorContainer.classList.remove('hidden');
+      setTimeout(() => {
+        errorContainer.textContent = '';
+        errorContainer.classList.add('hidden');
+      }, 5000)
+    }
+
+    function toggleModalView(reference) {
+      let el = null;
+      if (typeof reference === 'string') {
+        el = document.querySelector(reference);
+      } else if (reference instanceof HTMLElement) {
+        el = reference;
+      }
+      el.classList.toggle('hidden');
+      document.body.style.overflow = el.classList.contains('hidden') ? '' : 'hidden';
+      let closeEl = el.querySelector('.closeModalButton');
+      if (!closeEl) {
+        el.insertAdjacentHTML('beforeend', `<div class="closeModalButton></div>`);
+      }
+    }
+
+    document.body.addEventListener('click', (e) => {
+      if (e.target.classList.contains('close-modal')) {
+        toggleModalView(e.target.closest('.modal'));
+      }
+    })
   </script>
 </body>
 

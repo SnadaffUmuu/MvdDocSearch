@@ -1,6 +1,7 @@
 package com.mvd.docsearchmvd;
 
 import static com.mvd.docsearchmvd.util.Util.escape;
+import static com.mvd.docsearchmvd.util.Util.getStackTrace;
 
 import android.content.*;
 import android.net.Uri;
@@ -15,6 +16,7 @@ import com.mvd.docsearchmvd.search.Hit;
 import com.mvd.docsearchmvd.search.SearchEngine;
 
 import com.google.gson.Gson;
+import com.mvd.docsearchmvd.util.ApiResponse;
 
 import org.json.JSONObject;
 
@@ -60,11 +62,22 @@ public class WebAppInterface {
     @JavascriptInterface
     public String getFileContent(String path) {
         try {
-            return new String(Files.readAllBytes((new File(path)).toPath()), StandardCharsets.UTF_8);
+            File file = new File(path);
+            if (!file.exists() || !file.canRead()) {
+                return gson.toJson(new ApiResponse<String>(
+                        "Файл не существует или не readable",
+                        path
+                ));
+            }
+            String content = new String(Files.readAllBytes((file).toPath()), StandardCharsets.UTF_8);
+            return gson.toJson(new ApiResponse<String>(content));
         } catch (Exception e) {
             StringWriter sw = new StringWriter();
             e.printStackTrace(new PrintWriter(sw));
-            return "Ошибка чтения файла" + path + "<br>" + sw.toString();
+            return gson.toJson(new ApiResponse<String>(
+                    "Ошибка чтения файла",
+                    path + ": " + e.getMessage() + "\n" + getStackTrace(e)
+            ));
         }
     }
 

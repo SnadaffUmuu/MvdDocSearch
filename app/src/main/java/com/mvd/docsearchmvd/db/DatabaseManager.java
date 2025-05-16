@@ -183,6 +183,10 @@ public class DatabaseManager {
         try {
             while (cursor.moveToNext()) {
                 int fileId = cursor.getInt(0);
+                File file = new File(getFilePath(fileId));
+                if (!file.exists() || !file.canRead()) {
+                    continue;
+                }
                 String posString = cursor.getString(1);
                 // Разделяем строку позиций по запятой и преобразуем в числа
                 List<Integer> positions = new ArrayList<>();
@@ -235,11 +239,15 @@ public class DatabaseManager {
             );
             Log.d(WebAppInterface.TAG, "Удалено из files: " + deletedFiles + " строк");
 
+
             int deletedFolders = db.delete(
                     "indexed_folders",
                     "path = ?",
                     new String[]{prefix}
             );
+            // Удаление неиспользуемых токенов
+            Log.d(WebAppInterface.TAG, "Удаляем неиспользуемые токены из dict...");
+            db.execSQL("DELETE FROM dict WHERE id NOT IN (SELECT DISTINCT token_id FROM tokens)");
             Log.d(WebAppInterface.TAG, "Удалено из indexed_folders: " + deletedFolders + " строк");
         } finally {
             if (cursor != null) cursor.close();
