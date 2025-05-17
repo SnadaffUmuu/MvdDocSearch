@@ -43,6 +43,10 @@ public class Tokenizer {
                 while (pos < chars.length && Util.isAsciiLetterOrCyrillicOrDigit(chars[pos])) {
                     pos++;
                 }
+                if (pos - start == 1) {
+                    pos++; // пропустить этот символ
+                    continue; // не добавлять однобуквенные латиницу/кириллицу
+                }
             } else {
                 pos++;
             }

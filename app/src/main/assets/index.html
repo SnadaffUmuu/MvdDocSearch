@@ -7,7 +7,8 @@
   <title>Mvd Doc Search Minus</title>
 </head>
 <style>
-  html, body {
+  html,
+  body {
     width: 100vw;
     height: 100vh;
     margin: 0;
@@ -26,7 +27,7 @@
 
   main {
     box-sizing: border-box;
-    padding: 5px;
+    padding: 5px 15px;
     width: 100%;
     max-width: 100%;
     min-height: 0;
@@ -36,15 +37,15 @@
   }
 
   .dangerousButton {
-    border:#66001a;
-    color:#66001a;
+    border: 1px solid #9e0028;
+    color: #b3002d;
   }
 
   #mainInner {
     height: 100%;
     max-height: 100%;
     box-sizing: border-box;
-    padding-top:10px;
+    padding-top: 10px;
   }
 
   .excerpt {
@@ -74,9 +75,9 @@
     padding: 5px;
     margin-bottom: 5px;
   }
-  
+
   button {
-    height:30px;
+    height: 30px;
   }
 
   .hidden {
@@ -92,14 +93,22 @@
 
   #searchQuery {
     flex: 1 0 auto;
-    margin-right:10px;
+    margin-right: 10px;
+  }
+
+  #searchResCount {
+    font-weight: bold;
   }
 
   #searchResultWrap {
     max-height: 40vh;
     overflow: auto;
-    margin:10px 0;
     box-sizing: border-box;
+  }
+
+  #searchResultsHeader {
+    padding: 10px;
+    border-bottom: 1px solid #666;
   }
 
   .searchResult {
@@ -108,16 +117,38 @@
     display: flex;
     flex-flow: row nowrap;
     justify-content: space-between;
+    overflow: hidden;
+    /* Это важно - скрывает выходящий за пределы контент */
   }
 
   .searchResult_details {
-    flex: 1 0 auto;
     padding-right: 5px;
+    flex: 1 1 auto;
+    min-width: 0;
+    /* Ключевое свойство для переопределения минимального размера */
+    overflow: hidden;
+    /* Скрываем выходящий за пределы текст */
   }
 
   .searchResult_path {
     font-size: 12px;
+    white-space: nowrap;
+    /* Запрещаем перенос строк */
+    text-overflow: clip;
+    /* Или 'ellipsis', если хотите многоточие */
     overflow: hidden;
+    direction: rtl;
+    /* Магия - заставляем текст выравниваться справа */
+    text-align: left;
+    /* Но сам текст оставляем выровненным по левому краю */
+  }
+
+  .searchResult_filename {
+    white-space: nowrap;
+    text-overflow: clip;
+    overflow: hidden;
+    direction: rtl;
+    text-align: left;
   }
 
   .searchResult_details>span {
@@ -134,8 +165,26 @@
     list-style: none;
   }
 
-  #indexedFoldersList {
+  #indexedFoldersList li {
+    display: flex;
+    flex-flow: row nowrap;
+    align-items: center;
+  }
+
+  #indexedFoldersList li+li {
+    margin-top: 1px;
+    border-top: 1px dotted #ccc;
+  }
+
+  #indexedFoldersList input {
+    flex: 0 0 auto;
+    margin-right: 5px;
+  }
+
+  #indexedFoldersList li>span {
     overflow-wrap: break-word;
+    flex: 1 1 auto;
+    font-size: 13px;
   }
 
   #currentIndexWrap {
@@ -210,7 +259,7 @@
 
   #menu {
     padding: 5px;
-    height:30px;
+    height: 30px;
   }
 
   #manageIndex {
@@ -242,7 +291,8 @@
     overflow: auto;
   }
 
-  .minimalRow, .minimalCol {
+  .minimalRow,
+  .minimalCol {
     flex: 0 0 auto;
   }
 
@@ -263,20 +313,17 @@
   }
 
   .centered {
-    align-items:center !important;
+    align-items: center !important;
   }
 
   .closeModalButton {
     width: 30px;
     height: 30px;
     border-radius: 10px;
-    border: 1px solid #ccc;
-    content: 'X';
+    background: rgb(189, 189, 189);
+    border: 1px solid #4e4e4e;
     text-align: center;
     vertical-align: 29px;
-    position: absolute;
-    bottom: 5px;
-    right: 5px;
   }
 </style>
 
@@ -305,7 +352,8 @@
       <section class="minimalRow">
         <div class="colFlexContainer justified">
           <h5>Indexed folders</h5>
-          <button id="deleteIndexesForFolders" class="hidden dangerousButton" onClick="deleteIndexForSelectedFolders()">Delete selected</button>
+          <button id="deleteIndexesForFolders" class="hidden dangerousButton"
+            onClick="deleteIndexForSelectedFolders()">Delete selected</button>
         </div>
       </section>
       <section id="indexedFoldersListContainer">
@@ -313,10 +361,11 @@
       </section>
     </section>
     <section class="minimalRow colFlexContainer justified">
-      <button onclick="Android.updateIndex()">Update</button>
-      <button onclick="Android.rebuildIndex()">Rebuild</button>
+      <button onclick="updateIndex()">Update</button>
+      <button onclick="rebuildIndex()">Rebuild</button>
       <button onclick="Android.exportDB()">Export</button>
       <button onclick="clearDB()" class="dangerousButton">Clear</button>
+      <button class="closeModalButton">X</button>
     </section>
   </div>
   <main>
@@ -327,6 +376,9 @@
       </div>
       <div id="queryValidationMessage" class="hidden">Поиск не поддерживает пробелы, знаки препинания и эмодзи</div>
       <input type="hidden" id="currentSearchQuery">
+      <div id="searchResultsHeader">
+        Results: <span id="searchResCount"></span>
+      </div>
       <div id="searchResultWrap">
         <div id="searchResult"></div>
       </div>
@@ -394,9 +446,10 @@
 
       const res = Android.doSearch(searchQueryEl.value.trim());
 
-      console.log('front: search result: ', res);
       if (looksLikeJSON(res)) {
-        searchResultEl.innerHTML = JSON.parse(res).map(o => {
+        const parsed = JSON.parse(res);
+        document.getElementById('searchResCount').textContent = parsed.length;
+        searchResultEl.innerHTML = parsed.map(o => {
           const actualPath = o.path.startsWith(prefix) ? o.path.slice(prefix.length) : o.path;
           const parts = actualPath.split('/');
           const filename = parts.pop();
@@ -435,7 +488,6 @@
       const query = currentSearchQueryInput.value;
       const response = JSON.parse(Android.getFileContent(path));
       if (response.success) {
-        console.log('front: data', response.data);
         currentFileContent = response.data;
         excerptsContainer.innerHTML = '';
         fullPreviewEl.innerHTML = '';
@@ -585,7 +637,10 @@
       if (looksLikeJSON(data)) {
         allFoldersRes = JSON.parse(data).map(o => {
           return `
-          <li><input type="checkbox" name="indexedFolder" value="${o.path}">&nbsp;${o.path}</li>
+          <li>
+            <input type="checkbox" name="indexedFolder" value="${o.path}">
+            <span>${o.path.replace(prefix, '')}</span>
+          </li>
         `
         }).join('');
       } else {
@@ -599,15 +654,35 @@
     renderIndexedFolders(Android.getIndexedFolders());
 
     function deleteIndexForSelectedFolders() {
-      const selectedPaths = [...indexedFildersListEl.querySelectorAll('[type="checkbox"]:checked')].map(el => el.value);
-      const result = Android.deleteIndexesForPaths(JSON.stringify(selectedPaths));
-      if (result) {
-        renderIndexedFolders(result);
+      const isConfirmed = confirm("Точно удалить индекс по папке?");
+      if (isConfirmed) {
+        const selectedPaths = [...indexedFildersListEl.querySelectorAll('[type="checkbox"]:checked')].map(el => el.value);
+        const result = Android.deleteIndexesForPaths(JSON.stringify(selectedPaths));
+        if (result) {
+          renderIndexedFolders(result);
+        }
       }
     }
 
     function clearDB() {
-      renderIndexedFolders(Android.clearDB())
+      const isConfirmed = confirm("Точно удалить ВСЁ?");
+      if (isConfirmed) {
+        renderIndexedFolders(Android.clearDB())
+      }
+    }
+
+    function updateIndex() {
+      const isConfirmed = confirm("Точно обновить индекс? Индексируются только измененные и новые файлы");
+      if (isConfirmed) {
+        Android.updateIndex()
+      }
+    }
+
+    function rebuildIndex() {
+      const isConfirmed = confirm("Точно перестроить заново весь индекс?");
+      if (isConfirmed) {
+        Android.rebuildIndex()
+      }
     }
 
     function shiftPreview(goDown) {
@@ -681,14 +756,10 @@
       }
       el.classList.toggle('hidden');
       document.body.style.overflow = el.classList.contains('hidden') ? '' : 'hidden';
-      let closeEl = el.querySelector('.closeModalButton');
-      if (!closeEl) {
-        el.insertAdjacentHTML('beforeend', `<div class="closeModalButton></div>`);
-      }
     }
 
     document.body.addEventListener('click', (e) => {
-      if (e.target.classList.contains('close-modal')) {
+      if (e.target.classList.contains('closeModalButton')) {
         toggleModalView(e.target.closest('.modal'));
       }
     })

@@ -53,10 +53,21 @@ public class DatabaseManager {
                     "FOREIGN KEY(file_id) REFERENCES files(id) ON DELETE CASCADE, " +
                     "FOREIGN KEY(token_id) REFERENCES dict(id));");
 
+            db.execSQL("CREATE INDEX IF NOT EXISTS idx_tokens_token_id " +
+                    "ON tokens(token_id)");
+
             Log.d(WebAppInterface.TAG, "create indexed_folders if not exists");
             db.execSQL("CREATE TABLE  IF NOT EXISTS indexed_folders(" +
                     "id INTEGER PRIMARY KEY, " +
                     "path TEXT NOT NULL UNIQUE);");
+
+            db.execSQL("CREATE INDEX IF NOT EXISTS idx_files_path " +
+                            "ON files(path)"
+            );
+
+            db.execSQL("CREATE INDEX IF NOT EXISTS idx_dict_token ON dict(token);");
+
+            db.execSQL("CREATE INDEX IF NOT EXISTS idx_tokens_token_id_file_id ON tokens(token_id, file_id);");
 
             if (clear) {
                 db.execSQL("DELETE FROM tokens;");
@@ -143,6 +154,21 @@ public class DatabaseManager {
             cursor.close();
         }
         return files;
+    }
+
+    public List<String> getAllIndexedFolders() {
+        List<String> paths = new ArrayList<>();
+        Cursor cursor = db.rawQuery("SELECT path  FROM indexed_folders", null);
+        try {
+            if (cursor.moveToFirst()) {
+                do {
+                    paths.add(cursor.getString(cursor.getColumnIndexOrThrow("path")));
+                } while (cursor.moveToNext());
+            }
+        } finally {
+            cursor.close();
+        }
+        return paths;
     }
 
     public int getFileId(String filePath) {
@@ -247,12 +273,54 @@ public class DatabaseManager {
             );
             // Удаление неиспользуемых токенов
             Log.d(WebAppInterface.TAG, "Удаляем неиспользуемые токены из dict...");
-            db.execSQL("DELETE FROM dict WHERE id NOT IN (SELECT DISTINCT token_id FROM tokens)");
+            db.execSQL("DELETE FROM dict " +
+                    "WHERE NOT EXISTS (" +
+                    "    SELECT 1 FROM tokens " +
+                    "    WHERE tokens.token_id = dict.id" +
+                    ")");
             Log.d(WebAppInterface.TAG, "Удалено из indexed_folders: " + deletedFolders + " строк");
         } finally {
             if (cursor != null) cursor.close();
         }
 
+    }
+
+    public void deleteMissingFilesFromDb(Set<String> diskFilePaths, File[] roots) {
+        for (File root : roots) {
+            String prefix = root.getAbsolutePath();
+            String safePrefix = prefix
+                    .replace("\\", "\\\\")
+                    .replace("%", "\\%")
+                    .replace("_", "\\_");
+            String likeArg = safePrefix + "%";
+
+            Cursor cursor = null;
+            try {
+                cursor = db.rawQuery(
+                        "SELECT path FROM files WHERE path LIKE ? ESCAPE '\\'",
+                        new String[]{likeArg}
+                );
+
+                List<String> toDelete = new ArrayList<>();
+                while (cursor.moveToNext()) {
+                    String pathInDb = cursor.getString(0);
+                    if (!diskFilePaths.contains(pathInDb)) {
+                        toDelete.add(pathInDb);
+                    }
+                }
+                cursor.close();
+
+                for (String path : toDelete) {
+                    db.delete("files", "path = ?", new String[]{path});
+                }
+
+                // Чистим осиротевшие токены
+                db.execSQL("DELETE FROM dict WHERE id NOT IN (SELECT DISTINCT token_id FROM tokens)");
+
+            } finally {
+                if (cursor != null) cursor.close();
+            }
+        }
     }
 
     public boolean rootExists(File folder) {

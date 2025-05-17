@@ -123,6 +123,45 @@ public class WebAppInterface {
     }
 
     @JavascriptInterface
+    public void updateIndex() {
+        try {
+            DatabaseManager db = ((MainActivity) context).getDbManager();
+            FileIndexer fileIndexer = new FileIndexer(db, context);
+            fileIndexer.setProgressListener((fileName, done, total, elapsedSeconds) -> {
+                int percent = (int)((done * 100.0) / total);
+                String js = String.format("onIndexProgress(\"%s\", %d, %d)", escape(fileName), percent, elapsedSeconds);
+                webView.post(() -> webView.evaluateJavascript(js, null));
+            });
+            List<String> roots = db.getAllIndexedFolders();
+            new Thread(() -> {
+                File[] folders = roots.stream()
+                    .map(File::new)
+                    .toArray(File[]::new);
+                try {
+                    fileIndexer.updateIndex(folders);
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                } catch (SQLException e) {
+                    throw new RuntimeException(e);
+                }
+                String json = gson.toJson(db.getAllFolders());
+                String escapedJson = JSONObject.quote(json);
+                Log.d(TAG, "results json: " + escapedJson);
+                webView.post(() -> {
+                    String js = String.format("onIndexDone(%s)", escapedJson);
+                    webView.evaluateJavascript(js, null);
+                });
+            }).start();
+
+        } catch (Exception e) {
+            //TODO: handle error nicely
+            StringWriter sw = new StringWriter();
+            e.printStackTrace(new PrintWriter(sw));
+            Log.e(TAG, "Error updating indexes for folders: " + sw.toString());
+        }
+    }
+
+    @JavascriptInterface
     public void indexFolder(String path) {
         try {
             Log.d(TAG, "indexFolder called");
@@ -178,6 +217,11 @@ public class WebAppInterface {
                 webView.evaluateJavascript(js, null);
             });
         }
+    }
+
+    @JavascriptInterface
+    public void rebuildIndex() {
+
     }
 
     @JavascriptInterface

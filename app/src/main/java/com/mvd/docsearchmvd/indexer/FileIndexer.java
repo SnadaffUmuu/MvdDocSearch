@@ -12,6 +12,7 @@ import com.mvd.docsearchmvd.db.TokenDictionary;
 import java.io.*;
 import java.sql.*;
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class FileIndexer {
     private final SQLiteDatabase conn;
@@ -121,14 +122,18 @@ public class FileIndexer {
 
     public void updateIndex(File[] folders) throws IOException, SQLException {
         Log.d(WebAppInterface.TAG, "updateIndex");
-        List<File> allFiles = collectAllFiles(folders);
-        totalFiles = allFiles.size();
-        Log.d(WebAppInterface.TAG, "allFiles size: " + totalFiles);
         filesDone = 0;
         startTime = System.currentTimeMillis();
-        Log.d(WebAppInterface.TAG, "Start time: " + startTime);
         conn.beginTransaction();
+        List<File> allFiles = collectAllFiles(folders);
+        Set<String> actualPaths = allFiles.stream()
+                .map(File::getAbsolutePath)
+                .collect(Collectors.toSet());
+        Log.d(WebAppInterface.TAG, "Start time: " + startTime);
         try {
+            db.deleteMissingFilesFromDb(actualPaths, folders);
+            totalFiles = allFiles.size();
+            Log.d(WebAppInterface.TAG, "allFiles size: " + totalFiles);
             for (File file : allFiles) {
                 Log.d(WebAppInterface.TAG, file.getAbsolutePath());
                 indexFileIfNeeded(file);
@@ -155,13 +160,17 @@ public class FileIndexer {
         Log.d(WebAppInterface.TAG, "collectAllFiles called");
         for (File root : roots) {
             Log.d(WebAppInterface.TAG, "root folder:" + root.getAbsolutePath());
-            if (!db.rootExists(root)) {
+            if (db.rootExists(root) && (root == null || !root.exists())) {
+                Log.d(WebAppInterface.TAG, "root folder:" + root.getAbsolutePath() + " есть в базе, но нет на диске, удаляем из базы");
+                db.deleteIndexForPath(root.getAbsolutePath());
+            } else if (!db.rootExists(root)) {
+                Log.d(WebAppInterface.TAG, "root folder:" + root.getAbsolutePath() + " нет в базе, но есть на диске, добавляет в бд");
                 Log.d(WebAppInterface.TAG, "folder doesn't exists in db yet, inserting");
                 db.insertIndexedFolder(root);
                 walk(root, result);
-                //TODO: make feedback if exists
             } else {
                 Log.d(WebAppInterface.TAG, "folder already exists in indexed_folders");
+                walk(root, result);
             }
         }
         return result;
