@@ -2,13 +2,13 @@ package com.mvd.docsearchmvd.search;
 
 import com.mvd.docsearchmvd.WebAppInterface;
 import com.mvd.docsearchmvd.db.DatabaseManager;
+import com.mvd.docsearchmvd.util.LogTimer;
 
+import java.io.File;
 import java.sql.SQLException;
 import java.util.*;
 import java.util.stream.Collectors;
 import static com.mvd.docsearchmvd.util.Util.isAsciiLetterOrCyrillicOrDigit;
-
-import android.util.Log;
 
 public class SearchEngine {
     private DatabaseManager db;
@@ -18,11 +18,9 @@ public class SearchEngine {
     }
 
     public List<Hit> search(String initialQuery) throws SQLException {
-
-        Log.d(WebAppInterface.TAG, "Searching text: " + initialQuery);
-
+        LogTimer total = new LogTimer(WebAppInterface.TAG, false);
+        total.log("SearchEngine: starting search" + initialQuery);
         String query = initialQuery.toLowerCase(Locale.ROOT);
-
         List<String> queryTokens = new ArrayList<>();
         int pos = 0;
         while (pos < query.length()) {
@@ -43,11 +41,11 @@ public class SearchEngine {
             String tokenStr = query.substring(start, pos);
             queryTokens.add(tokenStr);
         }
-
         List<Map<Integer, List<Integer>>> postings = new ArrayList<>();
 
         for (String token : queryTokens) {
-            postings.add(db.getFilesWithPositions(token));
+            Map<Integer, List<Integer>> tokenPostings = db.getFilesWithPositions(token);
+            postings.add(tokenPostings);
         }
 
         Set<Integer> commonFiles = new HashSet<>(postings.get(0).keySet());
@@ -59,35 +57,55 @@ public class SearchEngine {
         List<Hit> result = new ArrayList<>();
 
         for (int fileId : commonFiles) {
-            Set<Integer> base = new HashSet<>(postings.get(0).get(fileId));
+            LogTimer tt = new LogTimer(WebAppInterface.TAG, true);
+            List<Integer> base = postings.get(0).get(fileId);
+            if (base == null || base.isEmpty()) continue;
+            List<Integer> intersection = new ArrayList<>(base); // копия для пересечений
             boolean matched = true;
-
             for (int i = 1; i < queryTokens.size(); i++) {
-                List<Integer> positions = postings.get(i).get(fileId);
-                if (positions == null) {
+                List<Integer> next = postings.get(i).get(fileId);
+                if (next == null || next.isEmpty()) {
                     matched = false;
                     break;
                 }
 
-                int finalI = i;
-                Set<Integer> shifted = positions.stream()
-                        .map(p -> p - finalI)
-                        .collect(Collectors.toSet());
+                List<Integer> temp = new ArrayList<>();
+                int a = 0, b = 0, offset = i;
 
-                base.retainAll(shifted);
-                if (base.isEmpty()) {
+                while (a < intersection.size() && b < next.size()) {
+                    int va = intersection.get(a);
+                    int vb = next.get(b) - offset;
+
+                    if (va == vb) {
+                        temp.add(va);
+                        a++;
+                        b++;
+                    } else if (va < vb) {
+                        a++;
+                    } else {
+                        b++;
+                    }
+                }
+
+                if (temp.isEmpty()) {
                     matched = false;
                     break;
                 }
+
+                intersection = temp;
             }
+            tt.log("SearchEngine: pos matching finished");
 
             if (matched) {
-                int hitCount = base.size();
+                int hitCount = intersection.size();
                 String path = db.getFilePath(fileId);
-                result.add(new Hit(fileId, path, hitCount));
+                File file = new File(path);
+                if (file.exists()) {
+                    result.add(new Hit(fileId, path, hitCount));
+                }
             }
         }
-
+        total.log("SearchEngine: search finished, found: " + result.size());
         return result;
     }
 }

@@ -111,6 +111,7 @@ public class MainActivity extends AppCompatActivity {
             }
         });
         WebView.setWebContentsDebuggingEnabled(true);
+        webView.getSettings().setDomStorageEnabled(true);
         webView.setWebChromeClient(new WebChromeClient() {
             @Override
             public boolean onConsoleMessage(ConsoleMessage message) {

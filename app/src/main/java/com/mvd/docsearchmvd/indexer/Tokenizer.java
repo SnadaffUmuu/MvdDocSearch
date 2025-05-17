@@ -62,6 +62,7 @@ public class Tokenizer {
         for (Map.Entry<String, IntList> entry : tokenMap.entrySet()) {
             String token = entry.getKey();
             IntList positions = entry.getValue();
+            positions.sort();
 
             StringBuilder sb = new StringBuilder();
             for (int i = 0; i < positions.size(); i++) {
@@ -78,6 +79,10 @@ public class Tokenizer {
     private static class IntList {
         private int[] data = new int[8];
         private int size = 0;
+
+        void sort() {
+            Arrays.sort(data, 0, size);
+        }
 
         void add(int value) {
             if (size == data.length) {

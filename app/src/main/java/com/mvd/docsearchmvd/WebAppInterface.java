@@ -17,6 +17,7 @@ import com.mvd.docsearchmvd.search.SearchEngine;
 
 import com.google.gson.Gson;
 import com.mvd.docsearchmvd.util.ApiResponse;
+import com.mvd.docsearchmvd.util.LogTimer;
 
 import org.json.JSONObject;
 
@@ -45,7 +46,9 @@ public class WebAppInterface {
     @JavascriptInterface
     public String doSearch(String query) {
         try {
+            Log.d(TAG, "back: doSearch called, query: " + query);
             DatabaseManager db = ((MainActivity) context).getDbManager();
+            Log.d(TAG, "doSearch about to start search");
             SearchEngine se = new SearchEngine(db);
             List<Hit> results = se.search(query);
             Log.d(TAG, "results num: " + results.size());
@@ -106,16 +109,19 @@ public class WebAppInterface {
 
     @JavascriptInterface
     public String clearDB() {
+        LogTimer total = new LogTimer(WebAppInterface.TAG, false);
+        total.log("SearchEngine: clearDB started");
         DatabaseManager db = ((MainActivity) context).getDbManager();
         db.getConnection().beginTransaction();
         try {
             db.clearTables();
             db.getConnection().setTransactionSuccessful();
+            total.log("SearchEngine: clearDB finished");
             return gson.toJson(db.getAllFolders());
         } catch (Exception e) {
             StringWriter sw = new StringWriter();
             e.printStackTrace(new PrintWriter(sw));
-            Log.e(TAG, "Error clearing DB: " + sw.toString());
+            total.log("SearchEngine: clearDB error: " + getStackTrace(e));
         } finally {
             db.getConnection().endTransaction();
         }

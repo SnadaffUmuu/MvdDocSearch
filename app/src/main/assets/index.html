@@ -7,6 +7,30 @@
   <title>Mvd Doc Search Minus</title>
 </head>
 <style>
+  :root {
+    --bg: #f3f3f3;
+    --text-color: #010102;
+    --button: #ccc;
+    --text-accent : #0018a3;
+    --text-accent-border : #828aff;
+    --borderDefault: var(--text-color);
+    --borderNeutral: gray;
+    --semiBgOverlayed : #f5dae573;
+    --thinOverlayed : #f5dae544;
+  }
+
+  body.night {
+    --bg: #120d36;
+    --text-color: #c7c7c7;
+    --button: #392c69;
+    --inputBg: #a09db9;
+    --borderDefault: var(--text-color);
+    --text-accent : #a0a5ed;
+    --semiBgOverlayed : #f3f3f326;
+    --thinOverlayed : #f3f3f31a;
+    --borderNeutral: gray;
+  }
+
   html,
   body {
     width: 100vw;
@@ -15,9 +39,16 @@
     padding: 0;
   }
 
+  .night input[type="checkbox"] {
+    filter: sepia(50%) brightness(70%) hue-rotate(170deg) saturate(70%) contrast(100%);
+    accent-color:var(--inputBg);
+  }  
+
   body {
     display: flex;
     flex-flow: column nowrap;
+    background: var(--bg);
+    color:var(--text-color);
   }
 
   h4,
@@ -38,7 +69,6 @@
 
   .dangerousButton {
     border: 1px solid #9e0028;
-    color: #b3002d;
   }
 
   #mainInner {
@@ -51,26 +81,26 @@
   .excerpt {
     cursor: pointer;
     padding: 10px;
-    border-bottom: 1px solid black;
+    border-bottom: var(--borderDefault, black);
   }
 
   .excerpt.current {
-    background: #f5e6ec;
+    background: var(--semiBgOverlayed);
   }
 
   .excerpt mark,
   #fullPreview mark {
-    color: #0018a3;
+    color: var(--text-accent);
     background: none;
   }
 
   mark[data-index] {
-    border-bottom: 1px dotted #7483d4;
+    border-bottom: 1px dotted var(--text-accent-border);
   }
 
   section,
   .section {
-    border: 1px solid #ccc;
+    border: 1px solid var(--thinOverlayed);
     border-radius: 10px;
     padding: 5px;
     margin-bottom: 5px;
@@ -78,6 +108,20 @@
 
   button {
     height: 30px;
+    background:var(--button);
+    outline: none;
+    border: 0;
+    border-radius: 5px;
+    padding: 0 10px;
+    color:var(--text-color);
+  }
+
+  input[type="text"],
+  input[type="search"],
+  textarea {
+    background:var(--inputBg);
+    border:1px solid var(--text-accent-border);
+    border-radius: 5px;
   }
 
   .hidden {
@@ -119,6 +163,10 @@
     justify-content: space-between;
     overflow: hidden;
     /* Это важно - скрывает выходящий за пределы контент */
+  }
+
+  .searchResult.current {
+    background: var(--semiBgOverlayed);
   }
 
   .searchResult_details {
@@ -219,8 +267,8 @@
     flex: 1 0 auto;
     height: 100%;
     box-sizing: border-box;
-    border: 1px solid gray;
     position: relative;
+    border-top:1px solid var(--borderNeutral);
   }
 
   .previewNav {
@@ -228,7 +276,7 @@
     height: 40px;
     width: 100%;
     box-sizing: border-box;
-    background: rgb(255 215 232 / 33%);
+    background: var(--thinOverlayed);
     border: 0;
     left: 0;
     right: 0;
@@ -277,8 +325,8 @@
     bottom: 0;
     left: 0;
     right: 0;
-    border: 10px solid rgba(0, 0, 0, 0.233);
-    background: #eee;
+    border: 10px solid var(--semiBgOverlayed);
+    background: var(--bg);
   }
 
   #indexedFoldersListContainer {
@@ -320,8 +368,6 @@
     width: 30px;
     height: 30px;
     border-radius: 10px;
-    background: rgb(189, 189, 189);
-    border: 1px solid #4e4e4e;
     text-align: center;
     vertical-align: 29px;
   }
@@ -331,6 +377,7 @@
   <header id="menu" class="colFlexContainer minimalRow justified">
     <button onclick="toggleModalView('#manageIndex')">index</button>
     <button>prefs</button>
+    <button onClick="toggleNightMode()">theme</button>
   </header>
   <div id="manageIndex" class="rowFlexContainer modal hidden">
     <div class="minimalRow">
@@ -425,36 +472,42 @@
 
     let currentFileContent = null;
     let highlightedContent = null;
+    let currentHit = null;
 
 
     function doSearch() {
-      console.log('front: starting search');
+      excerptsContainer.innerHTML = '';
+      fullPreviewEl.innerHTML = '';
+      searchResultEl.innerHTML = '';
+      currentHit = null;
+      const timer = createLogTimer('WebClient', false);
+      timer.log('front: doSearch started');
       if (!searchQueryEl.value.trim()) return;
       if (containsDisallowedCharacters(searchQueryEl.value.trim())) {
         toggleQueryValidationMessage(true);
         return;
       }
       searchResult.innerHTML = '';
-      excerptsContainer.innerHTML = '';
-      fullPreviewEl.innerHTML = '';
+      timer.log('front: searchResult.innerHTML ' + searchResult.innerHTML);
       previewsEl.scroll({
         left: 0,
         behavior: 'smooth'
       })
-      console.log('front: doSearch, query: ' + searchQueryEl.value);
       currentSearchQueryInput.value = searchQueryEl.value;
 
-      const res = Android.doSearch(searchQueryEl.value.trim());
+      setTimeout(() => {
+        timer.log('front: calling Android.doSearch');
+        const res = Android.doSearch(searchQueryEl.value.trim());
 
-      if (looksLikeJSON(res)) {
-        const parsed = JSON.parse(res);
-        document.getElementById('searchResCount').textContent = parsed.length;
-        searchResultEl.innerHTML = parsed.map(o => {
-          const actualPath = o.path.startsWith(prefix) ? o.path.slice(prefix.length) : o.path;
-          const parts = actualPath.split('/');
-          const filename = parts.pop();
-          const path = parts.join('/') + '/';
-          return `
+        if (looksLikeJSON(res)) {
+          const parsed = JSON.parse(res);
+          document.getElementById('searchResCount').textContent = parsed.length;
+          searchResultEl.innerHTML = parsed.map(o => {
+            const actualPath = o.path.startsWith(prefix) ? o.path.slice(prefix.length) : o.path;
+            const parts = actualPath.split('/');
+            const filename = parts.pop();
+            const path = parts.join('/') + '/';
+            return `
           <div class="searchResult" data-file-id="${o.id}" data-file-path="${o.path}">
             <span class="searchResult_details">
               <span class="searchResult_filename">${filename}</span>
@@ -463,10 +516,13 @@
             <span class="searchResult_hits">${o.hits}</span>
           </div>
         `
-        }).join('');
-      } else {
-        searchResultEl.innerHTML = res
-      }
+          }).join('');
+          timer.log('front: results to DOM finished');
+        } else {
+          searchResultEl.innerHTML = res
+        }
+        timer.logTotal('front: doSearch finished');
+      }, 0);
     }
 
     function indexFolder() {
@@ -540,6 +596,14 @@
     document.addEventListener('click', (e) => {
       const searchResEl = e.target.classList.contains('searchResult') ? e.target : e.target.closest('.searchResult');
       if (searchResEl) {
+        if (currentHit != null) {
+          const el = document.querySelector(`[data-file-id='${currentHit}']`);
+          if (el) {
+            el.classList.remove('current');
+          }
+        }
+        searchResEl.classList.add('current');
+        currentHit = searchResEl.dataset.fileId;
         console.log('front: search result element clicked')
         showExcerpts(searchResEl.dataset.filePath);
       }
@@ -629,6 +693,7 @@
     }
 
     function onIndexDone(data) {
+      progressBarEl.value = 0;
       renderIndexedFolders(data);
     }
 
@@ -665,9 +730,12 @@
     }
 
     function clearDB() {
+      const timer = createLogTimer('WebClient', false);
+      timer.log('front: clearDB');
       const isConfirmed = confirm("Точно удалить ВСЁ?");
       if (isConfirmed) {
         renderIndexedFolders(Android.clearDB())
+        timer.log('front: clearDB finished');
       }
     }
 
@@ -763,6 +831,46 @@
         toggleModalView(e.target.closest('.modal'));
       }
     })
+
+    function createLogTimer(tag, resetOnLog) {
+      let startTime = performance.now();
+      let lastTime = startTime;
+
+      function format(ms) {
+        return ms < 1000 ? `${ms.toFixed(0)} ms` : `${(ms / 1000).toFixed(2)} s`;
+      }
+
+      return {
+        log: function (message) {
+          const now = performance.now();
+          const elapsed = now - lastTime;
+          if (resetOnLog) lastTime = now;
+          console.log(`[${tag}] ${message} (+${format(elapsed)})`);
+        },
+        logTotal: function (message) {
+          const now = performance.now();
+          const totalElapsed = now - startTime;
+          console.log(`[${tag}] ${message} (TOTAL: ${format(totalElapsed)})`);
+        },
+        reset: function () {
+          startTime = performance.now();
+          lastTime = startTime;
+        }
+      };
+    }
+
+    function toggleNightMode() {
+      const isNight = document.body.classList.toggle('night');
+      console.log('front: isNight? ' + isNight);
+      localStorage.setItem("nightMode", isNight ? "on" : "off");
+    }
+
+    const isNight = localStorage.getItem("nightMode") && localStorage.getItem("nightMode") === 'on';
+    console.log('front: got nightMode from localStorage: ' + isNight)
+    if (isNight) {
+      document.body.classList.add("night");
+    }
+
   </script>
 </body>
 
