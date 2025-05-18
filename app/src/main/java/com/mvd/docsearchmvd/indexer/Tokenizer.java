@@ -1,7 +1,5 @@
 package com.mvd.docsearchmvd.indexer;
 
-import android.util.Log;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
@@ -9,6 +7,8 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.regex.Pattern;
+
+import com.mvd.docsearchmvd.model.Token;
 import com.mvd.docsearchmvd.util.Util;
 
 public class Tokenizer {

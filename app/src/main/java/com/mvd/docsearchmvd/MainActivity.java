@@ -1,5 +1,7 @@
 package com.mvd.docsearchmvd;
 
+import static com.mvd.docsearchmvd.util.Util.getStackTrace;
+
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
@@ -58,69 +60,77 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        Log.d(WebAppInterface.TAG, "onCreate called");
-        setContentView(R.layout.activity_main);
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            Log.d(WebAppInterface.TAG, "Android 11+");
-            if (!Environment.isExternalStorageManager()) {
-                Log.d(WebAppInterface.TAG, "the permission missing, starting intent");
-                Intent intent = new Intent(Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION);
-                startActivityForResult(intent, 101); // API 30+
-                return;
+        try {
+            super.onCreate(savedInstanceState);
+            Log.d(WebAppInterface.TAG, "onCreate called");
+            setContentView(R.layout.activity_main);
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                Log.d(WebAppInterface.TAG, "Android 11+");
+                if (!Environment.isExternalStorageManager()) {
+                    Log.d(WebAppInterface.TAG, "the permission missing, starting intent");
+                    Intent intent = new Intent(Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION);
+                    startActivityForResult(intent, 101); // API 30+
+                    return;
+                } else {
+                    Log.d(WebAppInterface.TAG, "the permission exists");
+                }
             } else {
-                Log.d(WebAppInterface.TAG, "the permission exists");
+                Log.d(WebAppInterface.TAG, "Android 10");
+                if (checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+                    Log.d(WebAppInterface.TAG, "the permission missing, requesting...");
+                    requestPermissions(new String[]{
+                            Manifest.permission.READ_EXTERNAL_STORAGE
+                    }, 100); // API 29 и ниже
+                    Log.d(WebAppInterface.TAG, "returning");
+                    return;
+                } else {
+                    Log.d(WebAppInterface.TAG, "the permission exists");
+                }
             }
-        } else {
-            Log.d(WebAppInterface.TAG, "Android 10");
-            if (checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
-                Log.d(WebAppInterface.TAG, "the permission missing, requesting...");
-                requestPermissions(new String[]{
-                        Manifest.permission.READ_EXTERNAL_STORAGE
-                }, 100); // API 29 и ниже
-                Log.d(WebAppInterface.TAG, "returning");
-                return;
-            } else {
-                Log.d(WebAppInterface.TAG, "the permission exists");
-            }
+            Log.d(WebAppInterface.TAG, "creating databaseManager instance...");
+            dbManager = new DatabaseManager(this);
+            dbManager.init(false);
+            Log.d(WebAppInterface.TAG, "setupWebView is ready to be called");
+            setupWebView();
+        } catch (Exception e) {
+            Log.e(WebAppInterface.TAG, e.getMessage() + "\n" + getStackTrace(e));
         }
-        Log.d(WebAppInterface.TAG, "creating databaseManager instance...");
-        dbManager = new DatabaseManager(this);
-        dbManager.init(false);
-        Log.d(WebAppInterface.TAG, "setupWebView is ready to be called");
-        setupWebView();
     }
 
     private void setupWebView() {
-        Log.d(WebAppInterface.TAG, "setupWebView called");
-        webView = findViewById(R.id.webview);
-        webView.getSettings().setJavaScriptEnabled(true);
-        webView.getSettings().setDomStorageEnabled(true);
-        webView.getSettings().setCacheMode(WebSettings.LOAD_NO_CACHE);
-        webView.addJavascriptInterface(new WebAppInterface(this, webView), "Android");
-        webView.setWebViewClient(new WebViewClient() {
-            @Override
-            public void onPageFinished(WebView view, String url) {
-                // Только если это вызов через PROCESS_TEXT
-                if (Intent.ACTION_PROCESS_TEXT.equals(getIntent().getAction())) {
-                    String receivedText = getIntent().getStringExtra(Intent.EXTRA_PROCESS_TEXT);
-                    if (receivedText != null && !receivedText.isEmpty()) {
-                        injectTextIntoWebView(receivedText);
+        try {
+            Log.d(WebAppInterface.TAG, "setupWebView called");
+            webView = findViewById(R.id.webview);
+            webView.getSettings().setJavaScriptEnabled(true);
+            webView.getSettings().setDomStorageEnabled(true);
+            webView.getSettings().setCacheMode(WebSettings.LOAD_NO_CACHE);
+            webView.addJavascriptInterface(new WebAppInterface(this, webView), "Android");
+            webView.setWebViewClient(new WebViewClient() {
+                @Override
+                public void onPageFinished(WebView view, String url) {
+                    // Только если это вызов через PROCESS_TEXT
+                    if (Intent.ACTION_PROCESS_TEXT.equals(getIntent().getAction())) {
+                        String receivedText = getIntent().getStringExtra(Intent.EXTRA_PROCESS_TEXT);
+                        if (receivedText != null && !receivedText.isEmpty()) {
+                            injectTextIntoWebView(receivedText);
+                        }
                     }
                 }
-            }
-        });
-        WebView.setWebContentsDebuggingEnabled(true);
-        webView.getSettings().setDomStorageEnabled(true);
-        webView.setWebChromeClient(new WebChromeClient() {
-            @Override
-            public boolean onConsoleMessage(ConsoleMessage message) {
-                Log.d(WebAppInterface.TAG, message.message() + " @ " + message.lineNumber());
-                return true;
-            }
-        });
-        webView.clearCache(true);
-        webView.loadUrl("file:///android_asset/index.html");
+            });
+            WebView.setWebContentsDebuggingEnabled(true);
+            webView.getSettings().setDomStorageEnabled(true);
+            webView.setWebChromeClient(new WebChromeClient() {
+                @Override
+                public boolean onConsoleMessage(ConsoleMessage message) {
+                    Log.d(WebAppInterface.TAG, message.message() + " @ " + message.lineNumber());
+                    return true;
+                }
+            });
+            webView.clearCache(true);
+            webView.loadUrl("file:///android_asset/index.html");
+        } catch (Exception e) {
+            Log.e(WebAppInterface.TAG, e.getMessage());
+        }
     }
 
     private String getPathFromUri(Uri uri) {

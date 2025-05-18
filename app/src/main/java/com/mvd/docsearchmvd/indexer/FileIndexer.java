@@ -8,10 +8,13 @@ import android.util.Log;
 import com.mvd.docsearchmvd.WebAppInterface;
 import com.mvd.docsearchmvd.db.DatabaseManager;
 import com.mvd.docsearchmvd.db.TokenDictionary;
+import com.mvd.docsearchmvd.model.Token;
+import com.mvd.docsearchmvd.model.ProgressUpdate;
 
 import java.io.*;
 import java.sql.*;
 import java.util.*;
+import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 
 public class FileIndexer {
@@ -35,6 +38,12 @@ public class FileIndexer {
     private int totalFiles = 0;
     private int filesDone = 0;
     private long startTime;
+
+    private BiConsumer<String, Object> progressCallback;
+
+    public void setProgressCallback(BiConsumer<String, Object> callback) {
+        this.progressCallback = callback;
+    }
 
     public FileIndexer(DatabaseManager db, Context context) throws SQLException {
         this.context = context;
@@ -141,9 +150,14 @@ public class FileIndexer {
                 long elapsed = (System.currentTimeMillis() - startTime) / 1000;
                 Log.d(WebAppInterface.TAG, "Progress, files Done: " + filesDone);
                 Log.d(WebAppInterface.TAG, "Progress, elapsed: " + elapsed);
+                /*
                 if (progressListener != null) {
                     Log.d(WebAppInterface.TAG, "calling onFileIndexed");
                     progressListener.onFileIndexed(file.getName(), filesDone, totalFiles, elapsed);
+                }
+                */
+                if (progressCallback != null) {
+                    progressCallback.accept("indexProgress", new ProgressUpdate(file.getName(), filesDone, totalFiles, elapsed));
                 }
             }
             conn.setTransactionSuccessful();
@@ -162,7 +176,7 @@ public class FileIndexer {
             Log.d(WebAppInterface.TAG, "root folder:" + root.getAbsolutePath());
             if (db.rootExists(root) && (root == null || !root.exists())) {
                 Log.d(WebAppInterface.TAG, "root folder:" + root.getAbsolutePath() + " есть в базе, но нет на диске, удаляем из базы");
-                db.deleteIndexForPath(root.getAbsolutePath());
+                db.deleteIndexForPath(root.getAbsolutePath(), false);
             } else if (!db.rootExists(root)) {
                 Log.d(WebAppInterface.TAG, "root folder:" + root.getAbsolutePath() + " нет в базе, но есть на диске, добавляет в бд");
                 Log.d(WebAppInterface.TAG, "folder doesn't exists in db yet, inserting");

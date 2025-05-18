@@ -7,6 +7,7 @@ import android.database.sqlite.SQLiteStatement;
 import android.util.Log;
 
 import com.mvd.docsearchmvd.WebAppInterface;
+import com.mvd.docsearchmvd.indexer.FileIndexer;
 import com.mvd.docsearchmvd.util.LogTimer;
 
 import java.io.File;
@@ -83,6 +84,7 @@ public class DatabaseManager {
             Log.e(WebAppInterface.TAG, sw.toString());
         }
     }
+
 
     public void clearTables() {
         LogTimer total = new LogTimer(WebAppInterface.TAG, false);
@@ -245,7 +247,7 @@ public class DatabaseManager {
         stmt.executeInsert();
     }
 
-    public void deleteIndexForPath (String prefix) {
+    public void deleteIndexForPath (String prefix, boolean keepRoot) {
         Log.d(WebAppInterface.TAG, "deleteIndexForPath called for folder: " + prefix);
         String safePrefix = prefix
                 .replace("\\", "\\\\")
@@ -272,11 +274,6 @@ public class DatabaseManager {
             );
             Log.d(WebAppInterface.TAG, "Удалено из files: " + deletedFiles + " строк");
 
-            int deletedFolders = db.delete(
-                    "indexed_folders",
-                    "path = ?",
-                    new String[]{prefix}
-            );
             // Удаление неиспользуемых токенов
             Log.d(WebAppInterface.TAG, "Удаляем неиспользуемые токены из dict...");
             db.execSQL("DELETE FROM dict " +
@@ -284,7 +281,15 @@ public class DatabaseManager {
                     "    SELECT 1 FROM tokens " +
                     "    WHERE tokens.token_id = dict.id" +
                     ")");
-            Log.d(WebAppInterface.TAG, "Удалено из indexed_folders: " + deletedFolders + " строк");
+
+            if (!keepRoot) {
+                int deletedFolders = db.delete(
+                        "indexed_folders",
+                        "path = ?",
+                        new String[]{prefix}
+                );
+                Log.d(WebAppInterface.TAG, "Удалено из indexed_folders: " + deletedFolders + " строк");
+            }
         } finally {
             if (cursor != null) cursor.close();
         }

@@ -2,12 +2,13 @@ package com.mvd.docsearchmvd.search;
 
 import com.mvd.docsearchmvd.WebAppInterface;
 import com.mvd.docsearchmvd.db.DatabaseManager;
+import com.mvd.docsearchmvd.model.Hit;
 import com.mvd.docsearchmvd.util.LogTimer;
 
 import java.io.File;
 import java.sql.SQLException;
 import java.util.*;
-import java.util.stream.Collectors;
+
 import static com.mvd.docsearchmvd.util.Util.isAsciiLetterOrCyrillicOrDigit;
 
 public class SearchEngine {
