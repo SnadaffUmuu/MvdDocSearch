@@ -1,11 +1,9 @@
 package com.mvd.docsearchmvd;
 
-import static com.mvd.docsearchmvd.util.Util.escape;
 import static com.mvd.docsearchmvd.util.Util.getStackTrace;
 import static com.mvd.docsearchmvd.util.Util.sendResultToJS;
 
 import android.content.*;
-import android.net.Uri;
 import android.webkit.JavascriptInterface;
 import android.util.Log;
 import android.webkit.WebView;
@@ -17,11 +15,9 @@ import com.mvd.docsearchmvd.model.Hit;
 import com.mvd.docsearchmvd.search.SearchEngine;
 
 import com.google.gson.Gson;
+
 import com.mvd.docsearchmvd.model.ApiResponse;
 import com.mvd.docsearchmvd.util.LogTimer;
-import com.mvd.docsearchmvd.util.Util;
-
-import org.json.JSONObject;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -42,6 +38,7 @@ public class WebAppInterface {
     private Context context;
     private WebView webView;
     private final Gson gson = new Gson();
+
     WebAppInterface(Context ctx, WebView webView) {
         this.context = ctx;
         this.webView = webView;
@@ -89,44 +86,57 @@ public class WebAppInterface {
     @JavascriptInterface
     public void deleteIndexesForPaths (String jsonArrayString) {
         List<String> paths = gson.fromJson(jsonArrayString, new TypeToken<List<String>>(){}.getType());
-            new Thread(() -> {
-                Log.d(WebAppInterface.TAG, "deleting indexes for paths: " + jsonArrayString);
-                DatabaseManager db = ((MainActivity) context).getDbManager();
-                db.getConnection().beginTransaction();
-                try {
-                    for (String path : paths) {
-                        db.deleteIndexForPath(path, false);
-                    }
-                    db.getConnection().setTransactionSuccessful();
-                    Log.d(WebAppInterface.TAG, "deleting indexes finished, returning folders...");
-                    sendResultToJS(webView, new ApiResponse<>(db.getAllFolders(), "deleteIndexesForPaths"));
-                } catch (Exception e) {
-                    sendResultToJS(webView, new ApiResponse<>(e.getMessage()+ "\n" + getStackTrace(e), "deleteIndexesForPaths"));
-                } finally {
-                    db.getConnection().endTransaction();
+        new Thread(() -> {
+            Log.d(WebAppInterface.TAG, "deleting indexes for paths: " + jsonArrayString);
+            DatabaseManager db = ((MainActivity) context).getDbManager();
+            db.getConnection().beginTransaction();
+            boolean success = false;
+            try {
+                for (String path : paths) {
+                    db.deleteIndexForPath(path);
                 }
-            }).start();
+                db.getConnection().setTransactionSuccessful();
+                success = true;
+                Log.d(WebAppInterface.TAG, "deleting indexes finished, returning folders...");
+            } catch (Exception e) {
+                sendResultToJS(webView, new ApiResponse<>("deleteIndexesForPaths",
+                        "Ошибка при удалении индекса папкам",
+                        e.getMessage() +  "\n" + getStackTrace(e)));
+            } finally {
+                db.getConnection().endTransaction();
+            }
+
+            if(success) {
+                sendResultToJS(webView, new ApiResponse<>("deleteIndexesForPaths", db.getAllFolders()));
+            }
+        }).start();
     }
 
     @JavascriptInterface
-    public String clearDB() {
-        LogTimer total = new LogTimer(WebAppInterface.TAG, false);
-        total.log("SearchEngine: clearDB started");
-        DatabaseManager db = ((MainActivity) context).getDbManager();
-        db.getConnection().beginTransaction();
-        try {
-            db.clearTables();
-            db.getConnection().setTransactionSuccessful();
-            total.log("SearchEngine: clearDB finished");
-            return gson.toJson(db.getAllFolders());
-        } catch (Exception e) {
-            StringWriter sw = new StringWriter();
-            e.printStackTrace(new PrintWriter(sw));
-            total.log("SearchEngine: clearDB error: " + getStackTrace(e));
-        } finally {
-            db.getConnection().endTransaction();
-        }
-        return null;
+    public void clearDB() {
+        new Thread(() -> {
+            LogTimer total = new LogTimer(WebAppInterface.TAG, false);
+            total.log("SearchEngine: clearDB started");
+            DatabaseManager db = ((MainActivity) context).getDbManager();
+            boolean success = false;
+            try {
+                db.getConnection().beginTransaction();
+                db.clearTables(false);
+                db.getConnection().setTransactionSuccessful();
+                total.log("SearchEngine: clearDB finished");
+                success = true;
+            } catch (Exception e) {
+                sendResultToJS(webView, new ApiResponse<>("clearDB",
+                        "ClearDB error",
+                        e.getMessage()+ "\n" + getStackTrace(e)));
+            } finally {
+                db.getConnection().endTransaction();
+            }
+
+            if(success) {
+                sendResultToJS(webView, new ApiResponse<>("clearDB", db.getAllFolders()));
+            }
+        }).start();
     }
 
     @JavascriptInterface
@@ -134,43 +144,37 @@ public class WebAppInterface {
         try {
             DatabaseManager db = ((MainActivity) context).getDbManager();
             FileIndexer fileIndexer = new FileIndexer(db, context);
-            /*
-            fileIndexer.setProgressListener((fileName, done, total, elapsedSeconds) -> {
-                int percent = (int)((done * 100.0) / total);
-                String js = String.format("onIndexProgress(\"%s\", %d, %d)", escape(fileName), percent, elapsedSeconds);
-                webView.post(() -> webView.evaluateJavascript(js, null));
-            });
-             */
+
             fileIndexer.setProgressCallback((type, payload) -> {
-                ApiResponse<Object> response = new ApiResponse<>(payload, type);
-                Util.sendResultToJS(webView, response);
+                sendResultToJS(webView, new ApiResponse<>(type, payload));
             });
+
             List<String> roots = db.getAllIndexedFolders();
             new Thread(() -> {
                 File[] folders = roots.stream()
                     .map(File::new)
                     .toArray(File[]::new);
+                boolean success = false;
                 try {
+                    db.getConnection().beginTransaction();
                     fileIndexer.updateIndex(folders);
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
-                } catch (SQLException e) {
-                    throw new RuntimeException(e);
+                    db.getConnection().setTransactionSuccessful();
+                    success = true;
+                } catch (IOException | SQLException e) {
+                    sendResultToJS(webView, new ApiResponse<>("updateIndex", "Ошибка индексации",
+                            e.getMessage() + "\n" + getStackTrace(e)));
+                } finally {
+                    db.getConnection().endTransaction();
                 }
-                String json = gson.toJson(db.getAllFolders());
-                String escapedJson = JSONObject.quote(json);
-                Log.d(TAG, "results json: " + escapedJson);
-                webView.post(() -> {
-                    String js = String.format("onIndexDone(%s)", escapedJson);
-                    webView.evaluateJavascript(js, null);
-                });
+                if (success) {
+                    sendResultToJS(webView, new ApiResponse<>("updateIndex", db.getAllFolders()));
+                }
             }).start();
 
         } catch (Exception e) {
-            //TODO: handle error nicely
-            StringWriter sw = new StringWriter();
-            e.printStackTrace(new PrintWriter(sw));
-            Log.e(TAG, "Error updating indexes for folders: " + sw.toString());
+            sendResultToJS(webView, new ApiResponse<>("updateIndex",
+        "updateIndex error",
+    e.getMessage()+ "\n" + getStackTrace(e)));
         }
     }
 
@@ -181,40 +185,76 @@ public class WebAppInterface {
             File folder = new File(path);
             if (folder == null || !folder.exists() || !folder.isDirectory()) {
                 Log.d(TAG, "Invalid folder");
-                sendResultToJS(webView, new ApiResponse<>("Папки нет или это не папка: " + path, "indexFolder"));
+                sendResultToJS(webView, new ApiResponse<>("indexFolder", "Папки нет или это не папка: ", path));
             }
             DatabaseManager db = ((MainActivity) context).getDbManager();
             FileIndexer fileIndexer = new FileIndexer(db, context);
 
             fileIndexer.setProgressCallback((type, payload) -> {
-                ApiResponse<Object> response = new ApiResponse<>(payload, type);
-                sendResultToJS(webView, response);
+                sendResultToJS(webView, new ApiResponse<>(type, payload));
             });
             new Thread(() -> {
                 File[] folders = new File[] { folder };
+                boolean success = false;
                 try {
+                    db.getConnection().beginTransaction();
                     fileIndexer.updateIndex(folders);
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
-                } catch (SQLException e) {
-                    throw new RuntimeException(e);
+                    db.getConnection().setTransactionSuccessful();
+                    success = true;
+                } catch (IOException | SQLException e) {
+                    sendResultToJS(webView, new ApiResponse<>("indexFolder", "Ошибка индексации",
+                e.getMessage() + "\n" + getStackTrace(e)));
+                } finally {
+                    db.getConnection().endTransaction();
                 }
-                sendResultToJS(webView, new ApiResponse<>(db.getAllFolders(), "indexFolder"));
+                if (success) {
+                    sendResultToJS(webView, new ApiResponse<>("indexFolder", db.getAllFolders()));
+                }
             }).start();
-            /*
-            String json = "...";
-IndexProgress p = gson.fromJson(json, IndexProgress.class);
-             */
         } catch (Exception e) {
-            StringWriter sw = new StringWriter();
-            e.printStackTrace(new PrintWriter(sw));
-            sendResultToJS(webView, new ApiResponse<>(e.getMessage()+ "\n" + getStackTrace(e), "indexFolder"));
+            sendResultToJS(webView, new ApiResponse<>("indexFolder", "indexFolder error", e.getMessage()+ "\n" + getStackTrace(e)));
         }
     }
 
     @JavascriptInterface
     public void rebuildIndex() {
+        try {
+            Log.d(WebAppInterface.TAG, "Deleting indexes before rebuilding index");
+            DatabaseManager db = ((MainActivity) context).getDbManager();
+            FileIndexer fileIndexer = new FileIndexer(db, context);
 
+            fileIndexer.setProgressCallback((type, payload) -> {
+                sendResultToJS(webView, new ApiResponse<>(type, payload));
+            });
+
+            List<String> roots = db.getAllIndexedFolders();
+            new Thread(() -> {
+                File[] folders = roots.stream()
+                        .map(File::new)
+                        .toArray(File[]::new);
+                boolean success = false;
+                try {
+                    db.getConnection().beginTransaction();
+                    db.clearTables(true);
+                    fileIndexer.updateIndex(folders);
+                    db.getConnection().setTransactionSuccessful();
+                    success = true;
+                } catch (IOException | SQLException e) {
+                    sendResultToJS(webView, new ApiResponse<>("rebuildIndex",
+                            "rebuildIndex error",
+                            e.getMessage()+ "\n" + getStackTrace(e)));
+                } finally {
+                    db.getConnection().endTransaction();
+                }
+                if (success) {
+                    sendResultToJS(webView, new ApiResponse<>("rebuildIndex", db.getAllFolders()));
+                }
+            }).start();
+        } catch (Exception e) {
+            sendResultToJS(webView, new ApiResponse<>("rebuildIndex",
+                "rebuildIndex error",
+                e.getMessage()+ "\n" + getStackTrace(e)));
+        }
     }
 
     @JavascriptInterface
@@ -223,15 +263,16 @@ IndexProgress p = gson.fromJson(json, IndexProgress.class);
     }
 
     @JavascriptInterface
-    public String getIndexedFolders() {
+    public String getIndexedFolders () {
         DatabaseManager db = ((MainActivity) context).getDbManager();
         List<Map<String, String>> res = db.getAllFolders();
         Log.d(TAG, "all folders: " + res.size());
-        return gson.toJson(db.getAllFolders());
+        return gson.toJson(new ApiResponse<>("getIndexedFolders", db.getAllFolders()));
     }
 
     @JavascriptInterface
     public void exportDB() {
+        //TODO: return something on front
         Log.d(TAG, "exportDB called");
         String dbName = "index.db";
         File dbFile = new File(context.getFilesDir(), "index.db");
@@ -241,8 +282,8 @@ IndexProgress p = gson.fromJson(json, IndexProgress.class);
         File exportedFile = new File(exportDir, dbName);
 
         try (
-                InputStream in = new FileInputStream(dbFile);
-                OutputStream out = new FileOutputStream(exportedFile)
+            InputStream in = new FileInputStream(dbFile);
+            OutputStream out = new FileOutputStream(exportedFile)
         ) {
             byte[] buffer = new byte[4096];
             int length;

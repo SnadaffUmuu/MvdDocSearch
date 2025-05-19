@@ -16,10 +16,9 @@ public class ProcessTextActivity extends AppCompatActivity {
         Intent newIntent = new Intent(this, MainActivity.class);
         newIntent.setAction(Intent.ACTION_PROCESS_TEXT);
         newIntent.putExtra(Intent.EXTRA_PROCESS_TEXT, text);
-        newIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK); // важно: откроет в новом task
-        newIntent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP); // если Main уже был — перезапустит
+        newIntent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
         startActivity(newIntent);
 
-        finish(); // Закрываем ProcessTextActivity
+        finish();
     }
 }

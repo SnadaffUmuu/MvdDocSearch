@@ -13,6 +13,8 @@
     --button: #ccc;
     --text-accent: #0018a3;
     --text-accent-border: #828aff;
+    --text-accent-bg: var(--thinOverlayed);
+    --text-accent-bg-deep: var(--semiBgOverlayed);
     --borderDefault: var(--text-color);
     --borderNeutral: gray;
     --semiBgOverlayed: #f5dae573;
@@ -20,13 +22,17 @@
   }
 
   body.night {
-    --bg: #120d36;
-    --text-color: #898787;
-    --text-accent-border: #7b7b7b;
-    --button: #392c69;
-    --inputBg: #f3f3f345;
+    --bg: #1e1e1e;
+    --bgDeep : #000;
+    --text-color: #cecbc9;
+    --button: #3c3c3c;
+    --text-accent: #b4bd6a;
+    --text-accent-border:#7c7c7d;
+    --text-accent-bg: #344134;
+    --text-accent-bg-deep: #262f26;
+--inputBg: #464646;
+--errorBox: #7c7c7d;
     --borderDefault: var(--text-color);
-    --text-accent: #a0a5ed;
     --semiBgOverlayed: #f3f3f326;
     --thinOverlayed: #f3f3f31a;
     --borderNeutral: gray;
@@ -55,7 +61,7 @@
 
   main {
     box-sizing: border-box;
-    padding: 5px 15px;
+    padding: 5px 0;
     width: 100%;
     max-width: 100%;
     min-height: 0;
@@ -75,14 +81,14 @@
     padding-top: 10px;
   }
 
-  .spinner {
-    position:absolute;
-    z-index:1000;
-    top:0;
-    left:0;
-    bottom:0;
-    right:0;
-    background: var(--thinOverlayed);
+  #mainInner > header {
+    padding:0 15px;
+    border-bottom: 1px solid var(--borderNeutral);
+    position: fixed;
+    top: 49px;
+    background: var(--bg);
+    width: 100%;
+    box-sizing: border-box;
   }
 
   .excerpt {
@@ -97,12 +103,15 @@
 
   .excerpt mark,
   #fullPreview mark {
-    color: var(--text-accent);
-    background: none;
+    color: var(--text-color);
+    background: var(--text-accent-bg);
+    padding: 0 1px;
+    display: inline-block;
+    border-radius: 10px;
   }
 
-  mark[data-index] {
-    border-bottom: 1px dotted var(--text-accent-border);
+  .excerpt.current mark {
+    background: var(--text-accent-bg-deep);
   }
 
   section,
@@ -115,11 +124,12 @@
 
   button {
     height: 30px;
+    padding: 0 10px;
+    box-sizing: border-box;
     background: var(--button);
     outline: none;
     border: 0;
     border-radius: 5px;
-    padding: 0 10px;
     color: var(--text-color);
   }
 
@@ -128,7 +138,8 @@
   textarea {
     background: var(--inputBg);
     border: 1px solid var(--text-accent-border);
-    border-radius: 5px;
+    color:var(--text-color);
+    font-size:16px;
   }
 
   .hidden {
@@ -145,6 +156,7 @@
   #searchQuery {
     flex: 1 0 auto;
     margin-right: 10px;
+    padding-left:7px;
   }
 
   #searchResCount {
@@ -152,24 +164,24 @@
   }
 
   #searchResultWrap {
-    max-height: 40vh;
+    max-height: 56vh;
     overflow: auto;
     box-sizing: border-box;
+    flex:1 1 auto;
+    padding-top: 55px;
   }
 
   #searchResultsHeader {
-    padding: 10px;
-    border-bottom: 1px solid #666;
+    padding: 10px 0;
   }
 
   .searchResult {
-    padding: 5px;
+    padding: 5px 15px;
     border-bottom: 1px dashed gray;
     display: flex;
     flex-flow: row nowrap;
     justify-content: space-between;
     overflow: hidden;
-    /* Это важно - скрывает выходящий за пределы контент */
   }
 
   .searchResult.current {
@@ -256,10 +268,11 @@
   #previews {
     max-width: 100vw;
     overflow: auto;
-    height: 70vh;
+    height: 67vh;
     width: 100%;
-    padding-top: 10px;
     box-sizing: border-box;
+    font-size:17px;
+    flex: 1 1 auto;
   }
 
   #previewColsWrap {
@@ -277,7 +290,6 @@
     height: 100%;
     box-sizing: border-box;
     position: relative;
-    padding-top:15px;
   }
 
   .previewNav {
@@ -285,11 +297,21 @@
     height: 40px;
     width: 100%;
     box-sizing: border-box;
-    background: var(--thinOverlayed);
     border: 0;
     left: 0;
     right: 0;
     z-index: 100;
+    background-image: radial-gradient(var(--thinOverlayed) 3px, transparent 0px);
+    background-repeat: repeat;
+    background-size: 10px 10px;
+    background-position: center;   
+    background-color:transparent; 
+    border-radius: 0;
+  }
+
+  .night .previewNav {
+    background-image: radial-gradient(var(--thinOverlayed) 1px, transparent 0px);
+    background-size: 3px 3px;
   }
 
   #prevChunk {
@@ -301,7 +323,7 @@
   }
 
   #fullPreview {
-    padding: 5px;
+    padding: 5px 15px;
     font-family: sans-serif;
     white-space: pre-wrap;
   }
@@ -312,14 +334,17 @@
     left: 10px;
     right: 10px;
     text-align: center;
+    padding:10px;
+    background: var(--errorBox);
   }
 
   #menu {
-    padding: 5px;
-    height: 30px;
+    padding: 10px 15px;
+    background:var(--bgDeep);
   }
 
-  #manageIndex {
+  #manageIndex,
+  #prefs {
     padding: 10px;
     height: 100%;
     max-height: 100%;
@@ -346,6 +371,18 @@
     flex: 1 1 auto;
     min-height: 0;
     overflow: auto;
+  }
+
+  #theBar {
+    height:20px;
+    flex: 0 0 auto;
+    background-image: radial-gradient(#2a51b7 1px, transparent 0px);
+    background-repeat: repeat;
+    background-size: 8px 8px;
+    background-position: center;   
+    background-color:transparent; 
+    border-top: 10px solid var(--bg);
+    border-bottom: 10px solid var(--bg);
   }
 
   .minimalRow,
@@ -375,17 +412,51 @@
 
   .closeModalButton {
     width: 30px;
-    height: 30px;
     border-radius: 10px;
     text-align: center;
-    vertical-align: 29px;
+    line-height: 29px;
   }
+
+  .spinner {
+    position:absolute;
+    z-index:1000;
+    top:0;
+    left:0;
+    bottom:0;
+    right:0;
+    background: var(--semiBgOverlayed);
+    display:flex;
+    flex-flow:row nowrap;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .spinner:after {
+    content: " ";
+    display: block;
+    width: 50px;
+    height: 50px;
+    margin: 8px;
+    border-radius: 50%;
+    border: 6.4px solid var(--text-color);
+    border-color: var(--text-color) transparent var(--text-color) transparent;
+    animation: review-ring 1.2s linear infinite;
+  }
+
+  @keyframes review-ring {
+    0% {
+      transform: rotate(0deg);
+    }
+    100% {
+      transform: rotate(360deg);
+    }
+  }  
 </style>
 
 <body class="rowFlexContainer">
   <header id="menu" class="colFlexContainer minimalRow justified">
     <button onclick="toggleModalView('#manageIndex')">index</button>
-    <button>prefs</button>
+    <button onclick="toggleModalView('#prefs')">prefs</button>
     <button onClick="toggleNightMode()">theme</button>
   </header>
   <div id="manageIndex" class="rowFlexContainer modal hidden">
@@ -423,20 +494,25 @@
       <button class="closeModalButton">X</button>
     </section>
   </div>
+  <div id="prefs" class="modal hidden">
+  </div>
   <main>
     <div id="mainInner">
-      <div class="colFlexContainer justified">
-        <input type="search" id="searchQuery" oninput="validateQuery(this)">
-        <button id="searchButton" class="minimalCol" onclick="doSearch()">Search</button>
-      </div>
-      <div id="queryValidationMessage" class="hidden">Поиск не поддерживает пробелы, знаки препинания и эмодзи</div>
-      <input type="hidden" id="currentSearchQuery">
-      <div id="searchResultsHeader">
-        Results: <span id="searchResCount"></span>
-      </div>
+      <header class="minimalRow">
+        <div class="colFlexContainer justified">
+          <input type="search" id="searchQuery" oninput="validateQuery(this)">
+          <button id="searchButton" class="minimalCol" onclick="doSearch()">Search</button>
+        </div>
+        <div id="queryValidationMessage" class="hidden">Поиск не поддерживает пробелы, знаки препинания и эмодзи</div>
+        <input type="hidden" id="currentSearchQuery">
+        <div id="searchResultsHeader">
+          Results: <span id="searchResCount"></span>
+        </div>
+      </header>
       <div id="searchResultWrap">
         <div id="searchResult"></div>
       </div>
+      <div id="theBar"></div>
       <div id="previews">
         <div id="previewColsWrap">
           <div class="previewColumn" id="excerptsOuter">
@@ -452,7 +528,6 @@
     </div>
   </main>
   <div id="error" class="hidden"></div>
-  <textarea id="frontLogs"></textarea>
   <script>
     const shortLimit = 50;
     const fullLimit = 500;
@@ -480,13 +555,14 @@
     const queryValidationMessageEl = document.getElementById('queryValidationMessage');
     const searchButton = document.getElementById('searchButton');
     const errorContainer = document.getElementById('error');
-    const frontLogsEl = document.getElementById('frontLogs');
     const mainInner = document.getElementById('mainInner');
+    const searchResCount = document.getElementById('searchResCount');
+    const prefs = document.getElementById('prefs');
 
     let currentFileContent = null;
     let highlightedContent = null;
     let currentHit = null;
-
+    let currentSpinnerContainer = null;
 
     function doSearch() {
       if (!searchQueryEl.value.trim()) return;
@@ -498,6 +574,7 @@
       fullPreviewEl.innerHTML = '';
       searchResultEl.innerHTML = '';
       searchResult.innerHTML = '';
+      searchResCount.innerHTML = '';
       currentHit = null;
       const timer = createLogTimer('WebClient', false);
       timer.log('front: doSearch started');
@@ -506,23 +583,21 @@
         behavior: 'smooth'
       })
       currentSearchQueryInput.value = searchQueryEl.value;
+      toggleSpinner(true, mainInner);
 
       setTimeout(() => {
         timer.log('front: calling Android.doSearch');
 
         const data = Android.doSearch(searchQueryEl.value.trim());
-        toggleSpinner(false, mainInner);
-        
+
         const res = JSON.parse(data);
         if (res.error) {
           searchResultEl.innerHTML = res.error + '<br>' + res.errorDetails;;
         } else {
           const parsed = res.data;
-          document.getElementById('searchResCount').textContent = parsed.length;
+          searchResCount.textContent = parsed.length;
           searchResultEl.innerHTML = parsed.map(o => {
-            console.log('o.path', o.path);
             const actualPath = o.path.startsWith(prefix) ? o.path.slice(prefix.length) : o.path;
-            console.log('actual path', o.path);
             const parts = actualPath.split('/');
             const filename = parts.pop();
             const path = parts.join('/') + '/';
@@ -536,25 +611,28 @@
           </div>
         `
           }).join('');
+          toggleSpinner(false);
           timer.log('front: results to DOM finished');
         } 
         timer.logTotal('front: doSearch finished');
       }, 0);
     }
 
+    function showInitialProgressUi() {
+      progressFileNameEl.textContent = "Файл: -";
+      progressBarEl.value = 0;
+      progressElapsedEl.textContent = 'Time: 0s';
+      indexProgressContainer.classList.remove('hidden');
+    }
+
     function onFolderChosen(path) {
       if (confirm("Проиндексировать папку " + path.replace(prefix, '') + "?")) {
-        post(false, 'building index for ' + path);
-        currentIndexPathInput.value = path;
         currentIndexEl.innerHTML = 'Текущая папка:<br>' + path;
+        currentIndexPathInput.value = path;
         currentIndexWrap.classList.remove('hidden');
-        currentIndexWrap.classList.remove('hidden');
-        progressFileNameEl.textContent = "Файл: -";
-        progressBarEl.value = 0;
-        progressElapsedEl.textContent = 'Time: 0s';
+        showInitialProgressUi();
         toggleSpinner(true, indexResultContainer);
         setTimeout(() => {
-          post(false, 'build index started');
           Android.indexFolder(currentIndexPathInput.value);
           currentIndexWrap.classList.add('hidden');
         }, 0);
@@ -708,26 +786,26 @@
     }
 
     function renderProgress (data) {
-      const res = JSON.parse(data.data);
-      progressFileNameEl.textContent = "Файл: " + res.fileName;
-      progressElapsedEl.textContent = "Time: " + res.elapsed + "s";
-      progressBarEl.value = res.percent;
+      if (indexProgressContainer.classList.contains('hidden')) {
+        indexProgressContainer.classList.remove('hidden');
+      }
+      console.log('front: percent: ' + data.percent)
+      progressFileNameEl.textContent = "Файл: " + data.fileName;
+      progressElapsedEl.textContent = "Time: " + data.elapsed + "s";
+      progressBarEl.value = data.percent;
     }
 
     function onIndexDone(data) {
-      post(false, 'front: onIndexDone, data: ' + data);
       progressBarEl.value = 0;
-      toggleSpinner(false, indexResultContainer);
-      renderIndexedFolders(data);
+      reRenderIndexView(data);
     }
 
     function renderIndexedFolders(data) {
-      const res = JSON.parse(data);
       let output = '';
-      if (res.error) {
-        output = res.error + "<br>" + res.errorDetails
+      if (data.error) {
+        output = data.error + "<br>" + data.errorDetails
       } else {
-        allFoldersRes = res.map(o => {
+        allFoldersRes = data.data.map(o => {
           return `
           <li>
             <input type="checkbox" name="indexedFolder" value="${o.path}">
@@ -741,52 +819,50 @@
       deleteIndexesForFoldersButton.classList.toggle('hidden', !allFoldersRes.length);
     }
 
-    renderIndexedFolders(Android.getIndexedFolders());
+    renderIndexedFolders(JSON.parse(Android.getIndexedFolders()));
 
     function deleteIndexForSelectedFolders() {
+      //CHECKED
       if (confirm("Точно удалить индекс по папке?")) {
         toggleSpinner(true, indexResultContainer);
         setTimeout(() => {
           const selectedPaths = [...indexedFildersListEl.querySelectorAll('[type="checkbox"]:checked')].map(el => el.value);
-          const result = Android.deleteIndexesForPaths(JSON.stringify(selectedPaths));
-          toggleSpinner(false, indexResultContainer);
-          if (result) {
-            renderIndexedFolders(result);
-          }
+          Android.deleteIndexesForPaths(JSON.stringify(selectedPaths))
         }, 0);
       }
     }
 
-    function onIndexesDeleted(data) {
-      console.log('front: indexes deleted')
-      toggleSpinner(false, indexResultContainer);
-      renderIndexedFolders(data);
-    }
-
     function clearDB() {
-      const timer = createLogTimer('WebClient', false);
-      timer.log('front: clearDB');
       if (confirm("Точно удалить ВСЁ?")) {
         toggleSpinner(true, indexResultContainer);
         setTimeout(() => {
-          renderIndexedFolders(Android.clearDB());
-          toggleSpinner(false, indexResultContainer);
-        })
-        timer.log('front: clearDB finished');
+          //TO CHECK
+          Android.clearDB();
+        }, 0);
       }
+    }
+    
+    function reRenderIndexView(data) {
+      toggleSpinner(false);
+      renderIndexedFolders(data);
     }
 
     function updateIndex() {
-      const isConfirmed = confirm("Точно обновить индекс? Индексируются только измененные и новые файлы");
-      if (isConfirmed) {
-        Android.updateIndex()
+      if (confirm("Точно обновить индекс? Индексируются только измененные и новые файлы")) {
+        toggleSpinner(true, indexResultContainer);
+        setTimeout(() => {
+          Android.updateIndex()
+        }, 0);
       }
     }
 
     function rebuildIndex() {
       const isConfirmed = confirm("Точно перестроить заново весь индекс?");
       if (isConfirmed) {
-        Android.rebuildIndex()
+        toggleSpinner(true, indexResultContainer);
+        setTimeout(() => {
+          Android.rebuildIndex()
+        }, 0);
       }
     }
 
@@ -908,39 +984,50 @@
       document.body.classList.add("night");
     }
 
-    function post(clear, ...messages) {
-      if (clear) {
-        frontLogsEl.value = messages.join('\n');
-      } else {
-        frontLogsEl.value += messages.join('\n');
-      }
-    }
-
     function toggleSpinner(on, el) {
       if (on) {
-        const currentPosition = window.getComputedStyle(el).position;
+        if (currentSpinnerContainer) {
+          console.log('front: a spinner is already spinning for the el ', currentSpinnerContainer);
+          return;
+        }
+        let spinnerContainer = document.body;
+        if (el) {
+          spinnerContainer = el;
+        }
+
+        currentSpinnerContainer = spinnerContainer;
+        const currentPosition = window.getComputedStyle(spinnerContainer).position;
         if (!['absolute','fixed', 'relative'].includes(currentPosition)) {
-          el.style.position = 'relative';
+          spinnerContainer.style.position = 'relative';
         } 
-        el.insertAdjacentHTML('afterbegin', `<div class="spinner">spin</div>`);
+        spinnerContainer.insertAdjacentHTML('afterbegin', `<div class="spinner"></div>`);
       } else {
-        el.style.position = '';
-        el.querySelector('.spinner')?.remove();
+        currentSpinnerContainer = null;
+        const currentSpinner = document.querySelector('.spinner');
+        if (currentSpinner) {
+          currentSpinner.parentElement.style.position = '';
+          currentSpinner.remove();
+        }
       }
     }
 
-    window._onNativeMessage = ({ type, data }) => {
-      console.log('front:nativeMessage: ' + data.type);
-      console.log(data.data)
+    window._onNativeMessage = (res) => {
+      const data = JSON.parse(res);
+      console.log('front:nativeMessage: ' + res);
       switch (data.type) {
         case "indexFolder" : 
-          onIndexDone(data.data);
+        case 'updateIndex' :
+          console.log('front:onNativeMessage:onIndexDone ' + data.type);
+          onIndexDone(data);
           break;
         case "indexProgress" :
+          console.log('front:onNativeMessage:indexProgress ' + data.type);
           renderProgress(data.data)
           break;
+        case "rebuildIndex" :
         case "deleteIndexesForPaths" : 
-          onIndexesDeleted(data.data)
+        case 'clearDB' : 
+          reRenderIndexView(data)
           break;
       }
     }

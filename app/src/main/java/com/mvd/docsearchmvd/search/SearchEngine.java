@@ -95,7 +95,7 @@ public class SearchEngine {
 
                 intersection = temp;
             }
-            tt.log("SearchEngine: pos matching finished");
+            //tt.log("SearchEngine: pos matching finished");
 
             if (matched) {
                 int hitCount = intersection.size();

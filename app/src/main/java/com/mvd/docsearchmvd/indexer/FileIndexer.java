@@ -133,39 +133,24 @@ public class FileIndexer {
         Log.d(WebAppInterface.TAG, "updateIndex");
         filesDone = 0;
         startTime = System.currentTimeMillis();
-        conn.beginTransaction();
         List<File> allFiles = collectAllFiles(folders);
         Set<String> actualPaths = allFiles.stream()
                 .map(File::getAbsolutePath)
                 .collect(Collectors.toSet());
         Log.d(WebAppInterface.TAG, "Start time: " + startTime);
-        try {
-            db.deleteMissingFilesFromDb(actualPaths, folders);
-            totalFiles = allFiles.size();
-            Log.d(WebAppInterface.TAG, "allFiles size: " + totalFiles);
-            for (File file : allFiles) {
-                Log.d(WebAppInterface.TAG, file.getAbsolutePath());
-                indexFileIfNeeded(file);
-                filesDone++;
-                long elapsed = (System.currentTimeMillis() - startTime) / 1000;
-                Log.d(WebAppInterface.TAG, "Progress, files Done: " + filesDone);
-                Log.d(WebAppInterface.TAG, "Progress, elapsed: " + elapsed);
-                /*
-                if (progressListener != null) {
-                    Log.d(WebAppInterface.TAG, "calling onFileIndexed");
-                    progressListener.onFileIndexed(file.getName(), filesDone, totalFiles, elapsed);
-                }
-                */
-                if (progressCallback != null) {
-                    progressCallback.accept("indexProgress", new ProgressUpdate(file.getName(), filesDone, totalFiles, elapsed));
-                }
+        db.deleteMissingFilesFromDb(actualPaths, folders);
+        totalFiles = allFiles.size();
+        Log.d(WebAppInterface.TAG, "allFiles size: " + totalFiles);
+        for (File file : allFiles) {
+            Log.d(WebAppInterface.TAG, file.getAbsolutePath());
+            indexFileIfNeeded(file);
+            filesDone++;
+            long elapsed = (System.currentTimeMillis() - startTime) / 1000;
+            Log.d(WebAppInterface.TAG, "Progress, files Done: " + filesDone);
+            Log.d(WebAppInterface.TAG, "Progress, elapsed: " + elapsed);
+            if (progressCallback != null) {
+                progressCallback.accept("indexProgress", new ProgressUpdate(file.getName(), filesDone, totalFiles, elapsed));
             }
-            conn.setTransactionSuccessful();
-        } catch (Exception e) {
-            Log.e(WebAppInterface.TAG, "Ошибка при обновлении индекса", e);
-            throw e;
-        } finally {
-            conn.endTransaction();
         }
     }
 
@@ -176,7 +161,7 @@ public class FileIndexer {
             Log.d(WebAppInterface.TAG, "root folder:" + root.getAbsolutePath());
             if (db.rootExists(root) && (root == null || !root.exists())) {
                 Log.d(WebAppInterface.TAG, "root folder:" + root.getAbsolutePath() + " есть в базе, но нет на диске, удаляем из базы");
-                db.deleteIndexForPath(root.getAbsolutePath(), false);
+                db.deleteIndexForPath(root.getAbsolutePath());
             } else if (!db.rootExists(root)) {
                 Log.d(WebAppInterface.TAG, "root folder:" + root.getAbsolutePath() + " нет в базе, но есть на диске, добавляет в бд");
                 Log.d(WebAppInterface.TAG, "folder doesn't exists in db yet, inserting");

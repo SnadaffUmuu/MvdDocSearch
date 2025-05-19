@@ -86,12 +86,14 @@ public class DatabaseManager {
     }
 
 
-    public void clearTables() {
+    public void clearTables(boolean keepRoots) {
         LogTimer total = new LogTimer(WebAppInterface.TAG, false);
         total.log("SearchEngine: clearTables started");
         db.execSQL("DELETE FROM files;");
         db.execSQL("DELETE FROM dict;");
-        db.execSQL("DELETE FROM indexed_folders;");
+        if (!keepRoots) {
+            db.execSQL("DELETE FROM indexed_folders;");
+        }
         total.log("SearchEngine: clearing tables finished");
     }
 
@@ -247,7 +249,7 @@ public class DatabaseManager {
         stmt.executeInsert();
     }
 
-    public void deleteIndexForPath (String prefix, boolean keepRoot) {
+    public void deleteIndexForPath (String prefix) {
         Log.d(WebAppInterface.TAG, "deleteIndexForPath called for folder: " + prefix);
         String safePrefix = prefix
                 .replace("\\", "\\\\")
@@ -282,14 +284,12 @@ public class DatabaseManager {
                     "    WHERE tokens.token_id = dict.id" +
                     ")");
 
-            if (!keepRoot) {
-                int deletedFolders = db.delete(
-                        "indexed_folders",
-                        "path = ?",
-                        new String[]{prefix}
-                );
-                Log.d(WebAppInterface.TAG, "Удалено из indexed_folders: " + deletedFolders + " строк");
-            }
+            int deletedFolders = db.delete(
+                    "indexed_folders",
+                    "path = ?",
+                    new String[]{prefix}
+            );
+            Log.d(WebAppInterface.TAG, "Удалено из indexed_folders: " + deletedFolders + " строк");
         } finally {
             if (cursor != null) cursor.close();
         }

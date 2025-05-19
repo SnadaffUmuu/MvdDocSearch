@@ -22,7 +22,7 @@ public class ApiResponse<T> {
         this.data = data;
     }
 
-    public ApiResponse(T data, String type) {
+    public ApiResponse(String type, T data) {
         this.success = true;
         this.data = data;
         this.type = type;
@@ -34,7 +34,7 @@ public class ApiResponse<T> {
         this.errorDetails = errorDetails;
     }
 
-    public ApiResponse(String error, String errorDetails, String type) {
+    public ApiResponse(String type, String error, String errorDetails) {
         this.success = false;
         this.error = error;
         this.errorDetails = errorDetails;

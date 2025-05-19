@@ -97,10 +97,32 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    @Override
+    protected void onResume() {
+        super.onResume();
+        if (webView == null || webView.getUrl() == null) {
+            setupWebView();
+        }
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        if (webView != null) {
+            webView.destroy();
+            webView = null;
+        }
+    }
+
     private void setupWebView() {
         try {
             Log.d(WebAppInterface.TAG, "setupWebView called");
             webView = findViewById(R.id.webview);
+            if (webView == null) {
+                Log.d(WebAppInterface.TAG, "webView is null in setupWebView()");
+                return;
+            }
+            webView.loadUrl("about:blank");
             webView.getSettings().setJavaScriptEnabled(true);
             webView.getSettings().setDomStorageEnabled(true);
             webView.getSettings().setCacheMode(WebSettings.LOAD_NO_CACHE);
@@ -118,7 +140,6 @@ public class MainActivity extends AppCompatActivity {
                 }
             });
             WebView.setWebContentsDebuggingEnabled(true);
-            webView.getSettings().setDomStorageEnabled(true);
             webView.setWebChromeClient(new WebChromeClient() {
                 @Override
                 public boolean onConsoleMessage(ConsoleMessage message) {
