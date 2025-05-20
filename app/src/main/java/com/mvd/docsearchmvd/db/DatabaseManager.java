@@ -8,6 +8,7 @@ import android.util.Log;
 
 import com.mvd.docsearchmvd.WebAppInterface;
 import com.mvd.docsearchmvd.indexer.FileIndexer;
+import com.mvd.docsearchmvd.model.StatusUpdate;
 import com.mvd.docsearchmvd.util.LogTimer;
 
 import java.io.File;
@@ -17,25 +18,28 @@ import java.io.StringWriter;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.*;
+import java.util.function.BiConsumer;
 
 public class DatabaseManager {
     private final SQLiteDatabase db;
     private final Context context;
 
+    private BiConsumer<String, Object> progressCallback;
+
+    public void setProgressCallback(BiConsumer<String, Object> callback) {
+        this.progressCallback = callback;
+    }
     public DatabaseManager(Context context) {
         this.context = context;
         String dbPath = context.getFilesDir().getAbsolutePath() + "/index.db";
         this.db = SQLiteDatabase.openOrCreateDatabase(dbPath, null);
         db.execSQL("PRAGMA foreign_keys = ON;");
     }
-
     public SQLiteDatabase getConnection() {
         return db;
     }
-
     public void init(boolean clear) {
         Log.d(WebAppInterface.TAG, "Init db");
-
         try {
 //            Log.d(WebAppInterface.TAG, "create dict if not exists");
             db.execSQL("CREATE TABLE IF NOT EXISTS dict (id INTEGER PRIMARY KEY, token TEXT UNIQUE);");
@@ -55,9 +59,6 @@ public class DatabaseManager {
                     "FOREIGN KEY(file_id) REFERENCES files(id) ON DELETE CASCADE, " +
                     "FOREIGN KEY(token_id) REFERENCES dict(id));");
 
-            db.execSQL("CREATE INDEX IF NOT EXISTS idx_tokens_token_id " +
-                    "ON tokens(token_id)");
-
 //            Log.d(WebAppInterface.TAG, "create indexed_folders if not exists");
             db.execSQL("CREATE TABLE  IF NOT EXISTS indexed_folders(" +
                     "id INTEGER PRIMARY KEY, " +
@@ -67,9 +68,16 @@ public class DatabaseManager {
                             "ON files(path)"
             );
 
-            db.execSQL("CREATE INDEX IF NOT EXISTS idx_dict_token ON dict(token);");
+            db.execSQL("CREATE INDEX IF NOT EXISTS idx_tokens_token_id " +
+                    "ON tokens(token_id)");
 
-            db.execSQL("CREATE INDEX IF NOT EXISTS idx_tokens_token_id_file_id ON tokens(token_id, file_id);");
+            db.execSQL("CREATE INDEX IF NOT EXISTS idx_tokens_file_id " +
+                    "ON tokens(file_id);");
+
+            db.execSQL("CREATE INDEX IF NOT EXISTS idx_tokens_token_id_file_id "
+                    + "ON tokens(token_id, file_id);");
+
+            db.execSQL("CREATE INDEX IF NOT EXISTS idx_dict_token ON dict(token);");
 
             if (clear) {
                 db.execSQL("DELETE FROM tokens;");
@@ -87,14 +95,31 @@ public class DatabaseManager {
 
 
     public void clearTables(boolean keepRoots) {
-        LogTimer total = new LogTimer(WebAppInterface.TAG, false);
-        total.log("SearchEngine: clearTables started");
+
+        LogTimer delTokens = new LogTimer(WebAppInterface.TAG, false);
+        db.execSQL("DELETE FROM tokens;");
+        if (progressCallback != null) {
+            progressCallback.accept("statusUpdate", new StatusUpdate("deleted from tokens", delTokens.getElapsed()));
+        }
+
+        LogTimer delFiles = new LogTimer(WebAppInterface.TAG, false);
         db.execSQL("DELETE FROM files;");
+        if (progressCallback != null) {
+            progressCallback.accept("statusUpdate", new StatusUpdate("deleted from files", delFiles.getElapsed()));
+        }
+
+        LogTimer delDict = new LogTimer(WebAppInterface.TAG, false);
         db.execSQL("DELETE FROM dict;");
+        if (progressCallback != null) {
+            progressCallback.accept("statusUpdate", new StatusUpdate("deleted from dict", delDict.getElapsed()));
+        }
+        LogTimer delRoots = new LogTimer(WebAppInterface.TAG, false);
         if (!keepRoots) {
             db.execSQL("DELETE FROM indexed_folders;");
         }
-        total.log("SearchEngine: clearing tables finished");
+        if (progressCallback != null) {
+            progressCallback.accept("statusUpdate", new StatusUpdate("deleted from indexed_folders", delRoots.getElapsed()));
+        }
     }
 
     public String updateFileMetadata(File file) throws IOException {
@@ -205,7 +230,7 @@ public class DatabaseManager {
     }
 
     public Map<Integer, List<Integer>> getFilesWithPositions(String query) {
-
+        LogTimer filesPos = new LogTimer(true);
         LogTimer total = new LogTimer(WebAppInterface.TAG, false);
         Map<Integer, List<Integer>> result = new HashMap<>();
         Cursor cursor = db.rawQuery(
@@ -238,7 +263,10 @@ public class DatabaseManager {
         } finally {
             cursor.close();
         }
-        total.log("DatabaseManager: result for query ready");
+        total.logTotal("DatabaseManager: result for query ready");
+        if (progressCallback != null) {
+            progressCallback.accept("statusUpdate", new StatusUpdate("files with positions computed", filesPos.getElapsed()));
+        }
         return result;
     }
 
@@ -268,14 +296,18 @@ public class DatabaseManager {
                 int count = cursor.getInt(0);
                 Log.d(WebAppInterface.TAG, "Найдено для удаления из files: " + count + " записей");
             }
-
+            LogTimer dbDeleteFilesTimer = new LogTimer(false);
             int deletedFiles = db.delete(
                     "files",
                     "path LIKE ? ESCAPE '\\'",
                     new String[]{likeArg}
             );
             Log.d(WebAppInterface.TAG, "Удалено из files: " + deletedFiles + " строк");
+            if (progressCallback != null) {
+                progressCallback.accept("statusUpdate", new StatusUpdate("from files table", dbDeleteFilesTimer.getElapsed()));
+            }
 
+            LogTimer dbDeleteTokensTimer = new LogTimer(false);
             // Удаление неиспользуемых токенов
             Log.d(WebAppInterface.TAG, "Удаляем неиспользуемые токены из dict...");
             db.execSQL("DELETE FROM dict " +
@@ -283,12 +315,18 @@ public class DatabaseManager {
                     "    SELECT 1 FROM tokens " +
                     "    WHERE tokens.token_id = dict.id" +
                     ")");
-
+            if (progressCallback != null) {
+                progressCallback.accept("statusUpdate", new StatusUpdate("from dict table", dbDeleteTokensTimer.getElapsed()));
+            }
+            LogTimer dbDeleteIndexedFoldersTimer = new LogTimer(false);
             int deletedFolders = db.delete(
                     "indexed_folders",
                     "path = ?",
                     new String[]{prefix}
             );
+            if (progressCallback != null) {
+                progressCallback.accept("statusUpdate", new StatusUpdate("from indexed_folders", dbDeleteIndexedFoldersTimer.getElapsed()));
+            }
             Log.d(WebAppInterface.TAG, "Удалено из indexed_folders: " + deletedFolders + " строк");
         } finally {
             if (cursor != null) cursor.close();

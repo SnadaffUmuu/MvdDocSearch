@@ -8,11 +8,18 @@ import com.mvd.docsearchmvd.util.LogTimer;
 import java.io.File;
 import java.sql.SQLException;
 import java.util.*;
+import java.util.function.BiConsumer;
 
 import static com.mvd.docsearchmvd.util.Util.isAsciiLetterOrCyrillicOrDigit;
 
 public class SearchEngine {
     private DatabaseManager db;
+
+    private BiConsumer<String, Object> progressCallback;
+
+    public void setProgressCallback(BiConsumer<String, Object> callback) {
+        this.progressCallback = callback;
+    }
 
     public SearchEngine(DatabaseManager db) {
         this.db = db;
@@ -20,7 +27,7 @@ public class SearchEngine {
 
     public List<Hit> search(String initialQuery) throws SQLException {
         LogTimer total = new LogTimer(WebAppInterface.TAG, false);
-        total.log("SearchEngine: starting search" + initialQuery);
+        total.logElapsed("SearchEngine: starting search" + initialQuery);
         String query = initialQuery.toLowerCase(Locale.ROOT);
         List<String> queryTokens = new ArrayList<>();
         int pos = 0;
@@ -106,7 +113,7 @@ public class SearchEngine {
                 }
             }
         }
-        total.log("SearchEngine: search finished, found: " + result.size());
+        total.logTotal("SearchEngine: search finished, found: " + result.size());
         return result;
     }
 }

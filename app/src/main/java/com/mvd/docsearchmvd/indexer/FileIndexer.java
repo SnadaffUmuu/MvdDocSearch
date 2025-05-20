@@ -8,8 +8,10 @@ import android.util.Log;
 import com.mvd.docsearchmvd.WebAppInterface;
 import com.mvd.docsearchmvd.db.DatabaseManager;
 import com.mvd.docsearchmvd.db.TokenDictionary;
+import com.mvd.docsearchmvd.model.StatusUpdate;
 import com.mvd.docsearchmvd.model.Token;
 import com.mvd.docsearchmvd.model.ProgressUpdate;
+import com.mvd.docsearchmvd.util.LogTimer;
 
 import java.io.*;
 import java.sql.*;
@@ -34,7 +36,6 @@ public class FileIndexer {
             "."
     };
     private final Context context;
-    private IndexProgressListener progressListener;
     private int totalFiles = 0;
     private int filesDone = 0;
     private long startTime;
@@ -51,14 +52,6 @@ public class FileIndexer {
         this.db = db;
         this.tokenizer = new Tokenizer();
         this.dict = new TokenDictionary(conn);
-    }
-
-    public interface IndexProgressListener {
-        void onFileIndexed(String fileName, int filesDone, int totalFiles, long elapsedSeconds);
-    }
-
-    public void setProgressListener(IndexProgressListener listener) {
-        this.progressListener = listener;
     }
 
     private boolean isAllowedExtension(File file) {
@@ -131,26 +124,38 @@ public class FileIndexer {
 
     public void updateIndex(File[] folders) throws IOException, SQLException {
         Log.d(WebAppInterface.TAG, "updateIndex");
-        filesDone = 0;
-        startTime = System.currentTimeMillis();
+        LogTimer collectFilesTimer = new LogTimer(false);
+
         List<File> allFiles = collectAllFiles(folders);
         Set<String> actualPaths = allFiles.stream()
                 .map(File::getAbsolutePath)
                 .collect(Collectors.toSet());
-        Log.d(WebAppInterface.TAG, "Start time: " + startTime);
+
+        if (progressCallback != null) {
+            progressCallback.accept("statusUpdate", new StatusUpdate("files collected", collectFilesTimer.getElapsed()));
+        }
+
+        LogTimer deleteFilesTimer = new LogTimer(false);
         db.deleteMissingFilesFromDb(actualPaths, folders);
+        if (progressCallback != null) {
+            progressCallback.accept("statusUpdate", new StatusUpdate("missing files deleted from db", deleteFilesTimer.getElapsed()));
+        }
+        filesDone = 0;
+        startTime = System.currentTimeMillis();
         totalFiles = allFiles.size();
         Log.d(WebAppInterface.TAG, "allFiles size: " + totalFiles);
+        LogTimer indexTimer = new LogTimer(false);
         for (File file : allFiles) {
             Log.d(WebAppInterface.TAG, file.getAbsolutePath());
             indexFileIfNeeded(file);
             filesDone++;
             long elapsed = (System.currentTimeMillis() - startTime) / 1000;
-            Log.d(WebAppInterface.TAG, "Progress, files Done: " + filesDone);
-            Log.d(WebAppInterface.TAG, "Progress, elapsed: " + elapsed);
             if (progressCallback != null) {
                 progressCallback.accept("indexProgress", new ProgressUpdate(file.getName(), filesDone, totalFiles, elapsed));
             }
+        }
+        if (progressCallback != null) {
+            progressCallback.accept("statusUpdate", new StatusUpdate("all files indexed", indexTimer.getElapsed()));
         }
     }
 

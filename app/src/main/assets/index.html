@@ -13,29 +13,31 @@
     --button: #ccc;
     --text-accent: #0018a3;
     --text-accent-border: #828aff;
-    --text-accent-bg: var(--thinOverlayed);
-    --text-accent-bg-deep: var(--semiBgOverlayed);
+    --text-accent-bg: #f7e7ee;
+    --text-accent-bg-deep: #dedfff;
     --borderDefault: var(--text-color);
     --borderNeutral: gray;
     --semiBgOverlayed: #f5dae573;
     --thinOverlayed: #f5dae544;
+    --previewNavDotsBg: #e9a6c478;
   }
 
   body.night {
     --bg: #1e1e1e;
-    --bgDeep : #000;
+    --bgDeep: #000;
     --text-color: #cecbc9;
     --button: #3c3c3c;
     --text-accent: #b4bd6a;
-    --text-accent-border:#7c7c7d;
+    --text-accent-border: #7c7c7d;
     --text-accent-bg: #344134;
     --text-accent-bg-deep: #262f26;
---inputBg: #464646;
---errorBox: #7c7c7d;
+    --inputBg: #464646;
+    --errorBox: #7c7c7d;
     --borderDefault: var(--text-color);
     --semiBgOverlayed: #f3f3f326;
     --thinOverlayed: #f3f3f31a;
     --borderNeutral: gray;
+    --previewNavDotsBg: var(--thinOverlayed);
   }
 
   html,
@@ -52,6 +54,7 @@
     background: var(--bg);
     color: var(--text-color);
     font-size: 14px;
+    position:relative;
   }
 
   h4,
@@ -81,8 +84,8 @@
     padding-top: 10px;
   }
 
-  #mainInner > header {
-    padding:0 15px;
+  #mainInner>header {
+    padding: 10px 15px;
     border-bottom: 1px solid var(--borderNeutral);
     position: fixed;
     top: 49px;
@@ -107,7 +110,7 @@
     background: var(--text-accent-bg);
     padding: 0 1px;
     display: inline-block;
-    border-radius: 10px;
+    border-radius: 7px;
   }
 
   .excerpt.current mark {
@@ -133,13 +136,18 @@
     color: var(--text-color);
   }
 
+  .button_small {
+    height:20px;
+    padding: 0 5px;
+  }
+
   input[type="text"],
   input[type="search"],
   textarea {
     background: var(--inputBg);
     border: 1px solid var(--text-accent-border);
-    color:var(--text-color);
-    font-size:16px;
+    color: var(--text-color);
+    font-size: 16px;
   }
 
   .hidden {
@@ -156,7 +164,7 @@
   #searchQuery {
     flex: 1 0 auto;
     margin-right: 10px;
-    padding-left:7px;
+    padding-left: 7px;
   }
 
   #searchResCount {
@@ -167,7 +175,7 @@
     max-height: 56vh;
     overflow: auto;
     box-sizing: border-box;
-    flex:1 1 auto;
+    flex: 1 1 auto;
     padding-top: 55px;
   }
 
@@ -192,22 +200,16 @@
     padding-right: 5px;
     flex: 1 1 auto;
     min-width: 0;
-    /* Ключевое свойство для переопределения минимального размера */
     overflow: hidden;
-    /* Скрываем выходящий за пределы текст */
   }
 
   .searchResult_path {
     font-size: 12px;
     white-space: nowrap;
-    /* Запрещаем перенос строк */
     text-overflow: clip;
-    /* Или 'ellipsis', если хотите многоточие */
     overflow: hidden;
     direction: rtl;
-    /* Магия - заставляем текст выравниваться справа */
     text-align: left;
-    /* Но сам текст оставляем выровненным по левому краю */
   }
 
   .searchResult_filename {
@@ -254,12 +256,6 @@
     font-size: 13px;
   }
 
-  #currentIndexWrap {
-    max-height: 30vh;
-    max-width: 95%;
-    overflow: auto;
-  }
-
   #fileName {
     margin: 0;
     padding: 0;
@@ -271,7 +267,7 @@
     height: 67vh;
     width: 100%;
     box-sizing: border-box;
-    font-size:17px;
+    font-size: 17px;
     flex: 1 1 auto;
   }
 
@@ -304,8 +300,8 @@
     background-image: radial-gradient(var(--thinOverlayed) 3px, transparent 0px);
     background-repeat: repeat;
     background-size: 10px 10px;
-    background-position: center;   
-    background-color:transparent; 
+    background-position: center;
+    background-color: transparent;
     border-radius: 0;
   }
 
@@ -334,13 +330,13 @@
     left: 10px;
     right: 10px;
     text-align: center;
-    padding:10px;
+    padding: 10px;
     background: var(--errorBox);
   }
 
   #menu {
     padding: 10px 15px;
-    background:var(--bgDeep);
+    background: var(--bgDeep);
   }
 
   #manageIndex,
@@ -374,13 +370,13 @@
   }
 
   #theBar {
-    height:20px;
+    height: 20px;
     flex: 0 0 auto;
     background-image: radial-gradient(#2a51b7 1px, transparent 0px);
     background-repeat: repeat;
     background-size: 8px 8px;
-    background-position: center;   
-    background-color:transparent; 
+    background-position: center;
+    background-color: transparent;
     border-top: 10px solid var(--bg);
     border-bottom: 10px solid var(--bg);
   }
@@ -417,21 +413,22 @@
     line-height: 29px;
   }
 
-  .spinner {
-    position:absolute;
-    z-index:1000;
-    top:0;
-    left:0;
-    bottom:0;
-    right:0;
+  .spinner, #spinnerGlobal {
+    position: absolute;
+    z-index: 1000;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    right: 0;
     background: var(--semiBgOverlayed);
-    display:flex;
-    flex-flow:row nowrap;
+    display: flex;
+    flex-flow: column nowrap;
     justify-content: center;
     align-items: center;
   }
 
-  .spinner:after {
+  .spinner:not(.noSpinner):before, 
+  #spinnerGlobal:not(.noSpinner):before {
     content: " ";
     display: block;
     width: 50px;
@@ -447,10 +444,59 @@
     0% {
       transform: rotate(0deg);
     }
+
     100% {
       transform: rotate(360deg);
     }
-  }  
+  }
+
+  #progressContainer {
+    width: calc(100% - 40px);
+    margin:10px auto;
+    background: var(--bg);
+    border-radius:5px;
+    padding:10px 10px 25px;
+    border:1px solid var(--borderNeutral);
+    box-sizing: border-box;
+    position:relative;
+  }
+
+  #closeProgress {
+    position:absolute;
+    bottom:10px;
+    right:10px;
+  }
+
+  #fileName {
+    text-overflow: clip;
+    overflow: hidden;
+    direction: rtl;
+    text-align: left;
+    white-space: nowrap;
+  }
+
+  #statusMessage {
+    height: 80px;
+    overflow:auto;
+    margin-bottom:5px;
+    border-bottom:1px dotted var(--text-color);
+    padding:5px;
+  }
+
+  #statusMessage.expanded {
+    height:80vh;
+  }
+
+  #statusMessage > div {
+    padding: 3px 0;
+    display:flex;
+    flex-flow:row nowrap;
+    justify-content: space-between;
+  }
+
+  #statusMessage > div > strong {
+    flex: 0 0 auto;
+  }
 </style>
 
 <body class="rowFlexContainer">
@@ -459,29 +505,26 @@
     <button onclick="toggleModalView('#prefs')">prefs</button>
     <button onClick="toggleNightMode()">theme</button>
   </header>
+  <div id="spinnerGlobal" class="hidden">
+    <div id="progressContainer" class="hidden">
+      <div id="statusMessage"></div>
+      <div id="fileName" class="hidden" data-initial-text="Файл: -">Файл: -</div>
+      <div id="elapsed" class="hidden" data-initial-text="Time: -s">Time: -s</div>
+      <progress class="hidden" id="progressBar" value="0" max="100"></progress>
+      <button id="closeProgress" class="hidden" onclick="toggleSpinner(false)">X</button>
+    </div>
+  </div>
   <div id="manageIndex" class="rowFlexContainer modal hidden">
     <div class="minimalRow">
       <input type="hidden" id="currentIndexPath" value="">
       <section class="colFlexContainer justified">
         <button onclick="Android.selectFolder()">Выбрать папку</button>
+        <button id="deleteIndexesForFolders" class="hidden dangerousButton"
+          onClick="deleteIndexForSelectedFolders()">Delete selected</button>
       </section>
-      <section id="currentIndexWrap" class="hidden">
-        <div id="currentIndex"></div>
-      </section>
-      <section id="progressContainer" class="hidden">
-        <div id="fileName">Файл: -</div>
-        <div id="elapsed">Time: 0s</div>
-        <progress id="progressBar" value="0" max="100"></progress>
-      </section>
+      <section id="taskResult" class="minimalRow hidden"></section>
     </div>
     <section id="indexResultContainer" class="rowFlexContainer">
-      <section class="minimalRow">
-        <div class="colFlexContainer justified">
-          <h5>Indexed folders</h5>
-          <button id="deleteIndexesForFolders" class="hidden dangerousButton"
-            onClick="deleteIndexForSelectedFolders()">Delete selected</button>
-        </div>
-      </section>
       <section id="indexedFoldersListContainer">
         <ul id="indexedFoldersList" class="hidden"></ul>
       </section>
@@ -489,8 +532,8 @@
     <section class="minimalRow colFlexContainer justified">
       <button onclick="updateIndex()">Update</button>
       <button onclick="rebuildIndex()">Rebuild</button>
-      <button onclick="Android.exportDB()">Export</button>
       <button onclick="clearDB()" class="dangerousButton">Clear</button>
+      <button onclick="Android.exportDB()">Export</button>
       <button class="closeModalButton">X</button>
     </section>
   </div>
@@ -533,10 +576,7 @@
     const fullLimit = 500;
     const stringLimit = 80; //kb
     const prefix = "/storage/emulated/0";
-
-    const currentIndexWrap = document.getElementById('currentIndexWrap');
-    const currentIndexPathInput = document.getElementById('currentIndexPath');
-    const currentIndexEl = document.getElementById('currentIndex');
+    const currentIndexPath = document.getElementById('currentIndexPath');
     const indexResultContainer = document.getElementById('indexResultContainer');
     const indexedFildersListEl = document.getElementById('indexedFoldersList');
     const deleteIndexesForFoldersButton = document.getElementById('deleteIndexesForFolders');
@@ -548,21 +588,24 @@
     const excerptsContainer = document.getElementById('excerpts');
     const fullPreviewOuter = document.getElementById('fullPreviewOuter');
     const fullPreviewEl = document.getElementById('fullPreview');
-    const indexProgressContainer = document.getElementById('progressContainer');
+    const progressContainer = document.getElementById('progressContainer');
+    const statusMessage = document.getElementById('statusMessage');
     const progressBarEl = document.getElementById('progressBar');
     const progressFileNameEl = document.getElementById('fileName');
     const progressElapsedEl = document.getElementById('elapsed');
+    const taskResult = document.getElementById('taskResult');
     const queryValidationMessageEl = document.getElementById('queryValidationMessage');
     const searchButton = document.getElementById('searchButton');
     const errorContainer = document.getElementById('error');
     const mainInner = document.getElementById('mainInner');
     const searchResCount = document.getElementById('searchResCount');
     const prefs = document.getElementById('prefs');
+    const spinnerGlobal = document.getElementById('spinnerGlobal');
+    const closeProgress = document.getElementById('closeProgress');
 
     let currentFileContent = null;
     let highlightedContent = null;
     let currentHit = null;
-    let currentSpinnerContainer = null;
 
     function doSearch() {
       if (!searchQueryEl.value.trim()) return;
@@ -583,7 +626,7 @@
         behavior: 'smooth'
       })
       currentSearchQueryInput.value = searchQueryEl.value;
-      toggleSpinner(true, mainInner);
+      toggleSpinner(true);
 
       setTimeout(() => {
         timer.log('front: calling Android.doSearch');
@@ -613,28 +656,17 @@
           }).join('');
           toggleSpinner(false);
           timer.log('front: results to DOM finished');
-        } 
+        }
         timer.logTotal('front: doSearch finished');
       }, 0);
     }
 
-    function showInitialProgressUi() {
-      progressFileNameEl.textContent = "Файл: -";
-      progressBarEl.value = 0;
-      progressElapsedEl.textContent = 'Time: 0s';
-      indexProgressContainer.classList.remove('hidden');
-    }
-
     function onFolderChosen(path) {
       if (confirm("Проиндексировать папку " + path.replace(prefix, '') + "?")) {
-        currentIndexEl.innerHTML = 'Текущая папка:<br>' + path;
-        currentIndexPathInput.value = path;
-        currentIndexWrap.classList.remove('hidden');
-        showInitialProgressUi();
-        toggleSpinner(true, indexResultContainer);
+        currentIndexPath.value = path;
+        toggleSpinner(true);
         setTimeout(() => {
-          Android.indexFolder(currentIndexPathInput.value);
-          currentIndexWrap.classList.add('hidden');
+          Android.indexFolder(currentIndexPath.value);
         }, 0);
       }
     }
@@ -785,18 +817,46 @@
       });
     }
 
-    function renderProgress (data) {
-      if (indexProgressContainer.classList.contains('hidden')) {
-        indexProgressContainer.classList.remove('hidden');
+    function updateProgressUiEl(el, data) {
+      const prefix = el.dataset?.initialText || '';
+      if (data) {
+        el.textContent = prefix.replace('-', data);
+        el.classList.remove('hidden');
+      } else {
+        el.textContent = prefix;
+        el.classList.add('hidden');
       }
-      console.log('front: percent: ' + data.percent)
-      progressFileNameEl.textContent = "Файл: " + data.fileName;
-      progressElapsedEl.textContent = "Time: " + data.elapsed + "s";
-      progressBarEl.value = data.percent;
     }
 
+    function renderProgress(data, isFinished) {
+      spinnerGlobal.classList.add('noSpinner');
+      updateProgressUiEl(progressFileNameEl, data.fileName);
+      updateProgressUiEl(progressElapsedEl, data.elapsed);
+      if (data.percent) {
+        progressBarEl.value = data.percent;
+        progressBarEl.classList.remove('hidden');
+      } else {
+        resetProgressBar();
+      }
+      if (data.stage || data.stageElapsed !== undefined) {
+        let output = '';
+        if (data.stage) {
+          output = `<span>${data.stage}</span>`;
+        }
+        if (data.stageElapsed) {
+          output += `<strong>${data.stageElapsed}</strong>`;
+        }
+        statusMessage.insertAdjacentHTML('beforeend', `<div>${output}</div>`);
+        statusMessage.scrollTop = statusMessage.scrollHeight;
+      }
+      progressContainer.classList.remove('hidden');
+      if (isFinished) {
+        statusMessage.classList.add('expanded');
+      }
+    }  
+
     function onIndexDone(data) {
-      progressBarEl.value = 0;
+      resetProgressBar();
       reRenderIndexView(data);
     }
 
@@ -824,7 +884,7 @@
     function deleteIndexForSelectedFolders() {
       //CHECKED
       if (confirm("Точно удалить индекс по папке?")) {
-        toggleSpinner(true, indexResultContainer);
+        toggleSpinner(true);
         setTimeout(() => {
           const selectedPaths = [...indexedFildersListEl.querySelectorAll('[type="checkbox"]:checked')].map(el => el.value);
           Android.deleteIndexesForPaths(JSON.stringify(selectedPaths))
@@ -834,22 +894,23 @@
 
     function clearDB() {
       if (confirm("Точно удалить ВСЁ?")) {
-        toggleSpinner(true, indexResultContainer);
+        toggleSpinner(true);
         setTimeout(() => {
           //TO CHECK
           Android.clearDB();
         }, 0);
       }
     }
-    
+
     function reRenderIndexView(data) {
-      toggleSpinner(false);
+      //toggleSpinner(false);
+      closeProgress.classList.remove('hidden');
       renderIndexedFolders(data);
     }
 
     function updateIndex() {
       if (confirm("Точно обновить индекс? Индексируются только измененные и новые файлы")) {
-        toggleSpinner(true, indexResultContainer);
+        toggleSpinner(true);
         setTimeout(() => {
           Android.updateIndex()
         }, 0);
@@ -859,7 +920,7 @@
     function rebuildIndex() {
       const isConfirmed = confirm("Точно перестроить заново весь индекс?");
       if (isConfirmed) {
-        toggleSpinner(true, indexResultContainer);
+        toggleSpinner(true);
         setTimeout(() => {
           Android.rebuildIndex()
         }, 0);
@@ -984,49 +1045,45 @@
       document.body.classList.add("night");
     }
 
-    function toggleSpinner(on, el) {
-      if (on) {
-        if (currentSpinnerContainer) {
-          console.log('front: a spinner is already spinning for the el ', currentSpinnerContainer);
-          return;
-        }
-        let spinnerContainer = document.body;
-        if (el) {
-          spinnerContainer = el;
-        }
+    function resetProgressBar() {
+      progressBarEl.value = 0;
+      progressBarEl.classList.add('hidden');
+    }
 
-        currentSpinnerContainer = spinnerContainer;
-        const currentPosition = window.getComputedStyle(spinnerContainer).position;
-        if (!['absolute','fixed', 'relative'].includes(currentPosition)) {
-          spinnerContainer.style.position = 'relative';
-        } 
-        spinnerContainer.insertAdjacentHTML('afterbegin', `<div class="spinner"></div>`);
-      } else {
-        currentSpinnerContainer = null;
-        const currentSpinner = document.querySelector('.spinner');
-        if (currentSpinner) {
-          currentSpinner.parentElement.style.position = '';
-          currentSpinner.remove();
-        }
+    function toggleSpinner(on) {
+      if(!on) {
+        resetProgressUi();
       }
+      spinnerGlobal.classList.toggle('hidden', !on);
+    }
+
+    function resetProgressUi() {
+      updateProgressUiEl(progressFileNameEl, null);
+      updateProgressUiEl(progressElapsedEl, null);
+      closeProgress.classList.add('hidden');
+      resetProgressBar();
+      statusMessage.innerHTML = '';
+      progressContainer.classList.add('hidden');
+      statusMessage.classList.remove('expanded');
+      spinnerGlobal.classList.remove('noSpinner');
     }
 
     window._onNativeMessage = (res) => {
       const data = JSON.parse(res);
       console.log('front:nativeMessage: ' + res);
       switch (data.type) {
-        case "indexFolder" : 
-        case 'updateIndex' :
-          console.log('front:onNativeMessage:onIndexDone ' + data.type);
+        case "indexFolder":
+        case 'updateIndex':
           onIndexDone(data);
           break;
-        case "indexProgress" :
-          console.log('front:onNativeMessage:indexProgress ' + data.type);
-          renderProgress(data.data)
+        case "indexProgress":
+        case "statusUpdate":
+        case "statusFinish":
+          renderProgress(data.data, data.type === 'statusFinish')
           break;
-        case "rebuildIndex" :
-        case "deleteIndexesForPaths" : 
-        case 'clearDB' : 
+        case "rebuildIndex":
+        case "deleteIndexesForPaths":
+        case 'clearDB':
           reRenderIndexView(data)
           break;
       }

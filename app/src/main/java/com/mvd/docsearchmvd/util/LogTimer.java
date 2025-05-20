@@ -15,19 +15,41 @@ public class LogTimer {
         this.lastTime = startTime;
     }
 
-    public void log(String message) {
+    public LogTimer(boolean resetOnLog) {
+        this.tag = "LogTimer";
+        this.resetOnLog = resetOnLog;
+        this.startTime = System.currentTimeMillis();
+        this.lastTime = startTime;
+    }
+
+    private long getRecord() {
         long now = System.currentTimeMillis();
         long elapsed = now - lastTime;
         if (resetOnLog) {
             lastTime = now;
         }
-        Log.d(tag, message + " (+" + formatElapsed(elapsed) + ")");
+        return elapsed;
+    }
+
+    public String getElapsed () {
+        return formatElapsed(getRecord());
+    }
+
+    public void logElapsed(String message) {
+        Log.d(tag, message + " (" + formatElapsed(getRecord()) + ")");
+    }
+
+    private long getTotal () {
+        long now = System.currentTimeMillis();
+        return now - startTime;
+    }
+
+    public String getTotalElapsed () {
+        return formatElapsed(getTotal());
     }
 
     public void logTotal(String message) {
-        long now = System.currentTimeMillis();
-        long totalElapsed = now - startTime;
-        Log.d(tag, message + " (TOTAL: " + formatElapsed(totalElapsed) + ")");
+        Log.d(tag, message + " (TOTAL: " + formatElapsed(getTotal()) + ")");
     }
 
     private String formatElapsed(long ms) {
