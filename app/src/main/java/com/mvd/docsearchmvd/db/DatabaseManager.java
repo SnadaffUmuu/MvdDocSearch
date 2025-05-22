@@ -57,7 +57,8 @@ public class DatabaseManager {
             db.execSQL("CREATE TABLE IF NOT EXISTS tokens(" +
                     "token_id INTEGER, " +
                     "file_id INTEGER NOT NULL, " +
-                    "positions TEXT NOT NULL, " +
+//                    "positions TEXT , " +
+                    "positions_blob BLOB NOT NULL, " +
                     "FOREIGN KEY(file_id) REFERENCES files(id) ON DELETE CASCADE, " +
                     "FOREIGN KEY(token_id) REFERENCES dict(id));");
 
@@ -290,7 +291,7 @@ public class DatabaseManager {
             progressCallback.accept("search", new StatusUpdate("prepare query..."));
         }
         Cursor cursor = db.rawQuery(
-        "SELECT t.file_id, t.positions, f.path " +
+        "SELECT t.file_id, t.positions_blob, f.path " +
                 "FROM tokens t " +
                 "JOIN dict d ON t.token_id = d.id " +
                 "JOIN files f ON t.file_id = f.id " +
@@ -306,22 +307,30 @@ public class DatabaseManager {
                 progressCallback.accept("search", new StatusUpdate("getting fields values..."));
 
                 int fileId = cursor.getInt(0);
-                String posString = cursor.getString(1);
+                byte[] blob = cursor.getBlob(1);
+                List<Integer> positions;
 
-                progressCallback.accept("search", new StatusUpdate("finished", t.getElapsed()));
+//               progressCallback.accept("search", new StatusUpdate("finished", t.getElapsed()));
 
                 // Разделяем строку позиций по запятой и преобразуем в числа
-                LogTimer tt = new LogTimer(true);
-                progressCallback.accept("search", new StatusUpdate("splitting and casting to digits..."));
-
+                /*
+                String posString = cursor.getString(1);
                 String[] splittedPostings = posString.split(",");
                 List<Integer> positions = new ArrayList<>(splittedPostings.length);
                 for (String part : splittedPostings) {
                     positions.add(Integer.parseInt(part.trim()));
                 }
-
-                progressCallback.accept("search", new StatusUpdate("finished", t.getElapsed()));
-
+                 */
+                if (blob != null) {
+                    positions = decodeDeltaVarIntBlob(blob);
+                } else {
+                    String posString = cursor.getString(1);
+                    String[] splitted = posString.split(",");
+                    positions = new ArrayList<>(splitted.length);
+                    for (String part : splitted) {
+                        positions.add(Integer.parseInt(part.trim()));
+                    }
+                }
                 // Добавляем в Map — если ключ уже есть, объединяем списки
                 LogTimer ttt = new LogTimer(true);
                 progressCallback.accept("search", new StatusUpdate("adding to map and merging common lists..."));
@@ -330,7 +339,6 @@ public class DatabaseManager {
                     oldList.addAll(newList);
                     return oldList;
                 });
-
                 progressCallback.accept("search", new StatusUpdate("finished", t.getElapsed()));
             }
         } finally {
@@ -452,5 +460,24 @@ public class DatabaseManager {
         } finally {
             cursor.close();
         }
+    }
+
+    private List<Integer> decodeDeltaVarIntBlob(byte[] blob) {
+        List<Integer> positions = new ArrayList<>();
+        int pos = 0;
+        int i = 0;
+        while (i < blob.length) {
+            int shift = 0;
+            int result = 0;
+            while (true) {
+                int b = blob[i++] & 0xFF;
+                result |= (b & 0x7F) << shift;
+                if ((b & 0x80) == 0) break;
+                shift += 7;
+            }
+            pos += result;
+            positions.add(pos);
+        }
+        return positions;
     }
 }

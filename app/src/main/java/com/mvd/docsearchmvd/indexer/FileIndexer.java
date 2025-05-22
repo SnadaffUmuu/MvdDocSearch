@@ -87,7 +87,8 @@ public class FileIndexer {
             progressCallback.accept("statusUpdate", new StatusUpdate("inserting tokens [" + file.getName() + "] started..."));
         }
 
-        String sql = "INSERT INTO tokens (token_id, file_id, positions) VALUES (?, ?, ?)";
+//        String sql = "INSERT INTO tokens (token_id, file_id, positions, positions_blob) VALUES (?, ?, ?, ?)";
+        String sql = "INSERT INTO tokens (token_id, file_id, positions_blob) VALUES (?, ?, ?)";
         SQLiteStatement stmt = conn.compileStatement(sql);
 
         for (Token token : tokens) {
@@ -96,7 +97,8 @@ public class FileIndexer {
                 stmt.clearBindings();
                 stmt.bindLong(1, tokenId);
                 stmt.bindLong(2, fileId);
-                stmt.bindString(3, token.positions);
+//                stmt.bindString(3, token.positions);
+                stmt.bindBlob(3, token.positionsBlob.length > 0 ? token.positionsBlob : new byte[0]);
                 stmt.executeInsert();
             } catch (Exception e) {
                 Log.e(WebAppInterface.TAG, "Ошибка вставки токена: " + token.text, e);

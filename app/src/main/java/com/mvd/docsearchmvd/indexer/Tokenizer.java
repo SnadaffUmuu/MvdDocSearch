@@ -1,5 +1,8 @@
 package com.mvd.docsearchmvd.indexer;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
@@ -64,16 +67,44 @@ public class Tokenizer {
             IntList positions = entry.getValue();
             positions.sort();
 
-            StringBuilder sb = new StringBuilder();
-            for (int i = 0; i < positions.size(); i++) {
-                if (i > 0) sb.append(',');
-                sb.append(positions.get(i));
-            }
+//            StringBuilder sb = new StringBuilder();
+//            for (int i = 0; i < positions.size(); i++) {
+//                if (i > 0) sb.append(',');
+//                sb.append(positions.get(i));
+//            }
 
-            tokens.add(new Token(token, sb.toString()));
+//            tokens.add(new Token(token, sb.toString(), toDeltaVarIntBlob(positions)));
+            tokens.add(new Token(token, toDeltaVarIntBlob(positions)));
         }
 
         return tokens;
+    }
+
+    private static byte[] toDeltaVarIntBlob(IntList positions) {
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        int prev = 0;
+        for (int i = 0; i < positions.size(); i++) {
+            int delta = positions.get(i) - prev;
+            prev = positions.get(i);
+            writeVarInt(out, delta);
+        }
+        return out.toByteArray();
+    }
+
+    private static void writeVarInt(OutputStream out, int value) {
+        while ((value & ~0x7F) != 0) {
+            try {
+                out.write((value & 0x7F) | 0x80);
+                value >>>= 7;
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
+        try {
+            out.write(value);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     private static class IntList {
