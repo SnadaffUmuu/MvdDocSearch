@@ -8,12 +8,14 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 
+import android.app.AlertDialog;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
 import android.provider.DocumentsContract;
 import android.util.Log;
 import android.webkit.ConsoleMessage;
+import android.webkit.JsPromptResult;
 import android.webkit.WebChromeClient;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
@@ -23,6 +25,7 @@ import android.os.Build;
 import android.provider.Settings;
 import android.Manifest;
 import android.content.pm.PackageManager;
+import android.widget.EditText;
 import android.widget.Toast;
 
 import com.mvd.docsearchmvd.db.DatabaseManager;
@@ -139,14 +142,30 @@ public class MainActivity extends AppCompatActivity {
                     }
                 }
             });
-            WebView.setWebContentsDebuggingEnabled(true);
             webView.setWebChromeClient(new WebChromeClient() {
                 @Override
                 public boolean onConsoleMessage(ConsoleMessage message) {
                     Log.d(WebAppInterface.TAG, message.message() + " @ " + message.lineNumber());
                     return true;
                 }
+                @Override
+                public boolean onJsPrompt(WebView view, String url, String message, String defaultValue, JsPromptResult result) {
+                    final EditText input = new EditText(view.getContext());
+                    input.setText(defaultValue);
+
+                    new AlertDialog.Builder(view.getContext())
+                            .setTitle("Ввод данных")
+                            .setMessage(message)
+                            .setView(input)
+                            .setPositiveButton("OK", (dialog, which) -> result.confirm(input.getText().toString()))
+                            .setNegativeButton("Отмена", (dialog, which) -> result.cancel())
+                            .setCancelable(false)
+                            .show();
+
+                    return true;
+                }
             });
+            WebView.setWebContentsDebuggingEnabled(true);
             webView.clearCache(true);
             webView.loadUrl("file:///android_asset/index.html");
         } catch (Exception e) {

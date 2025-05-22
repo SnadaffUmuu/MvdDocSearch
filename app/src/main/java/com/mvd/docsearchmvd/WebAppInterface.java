@@ -20,6 +20,9 @@ import com.google.gson.Gson;
 import com.mvd.docsearchmvd.model.ApiResponse;
 import com.mvd.docsearchmvd.util.LogTimer;
 import com.mvd.docsearchmvd.util.NativeLogger;
+import com.mvd.docsearchmvd.util.SettingsManager;
+
+import org.json.JSONObject;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -40,10 +43,12 @@ public class WebAppInterface {
     private Context context;
     private WebView webView;
     private final Gson gson = new Gson();
+    private SettingsManager settingsManager;
 
     WebAppInterface(Context ctx, WebView webView) {
         this.context = ctx;
         this.webView = webView;
+        this.settingsManager = new SettingsManager(context);
     }
     @JavascriptInterface
     public String doSearch(String query) {
@@ -190,10 +195,11 @@ public class WebAppInterface {
     }
 
     @JavascriptInterface
-    public void updateIndex() {
+    public void updateIndex(String jsonArrayString) {
         try {
+
             DatabaseManager db = ((MainActivity) context).getDbManager();
-            FileIndexer fileIndexer = new FileIndexer(db, context);
+            FileIndexer fileIndexer = new FileIndexer(db, context, settingsManager);
 
             sendResultToJS(webView, new ApiResponse<>("statusUpdate",
                     new StatusUpdate("updateIndex started")));
@@ -207,7 +213,8 @@ public class WebAppInterface {
 
             LogTimer getAllFoldersTimer = new LogTimer(true);
 
-            List<String> roots = db.getAllIndexedFolders();
+            List<String> rawRoots = gson.fromJson(jsonArrayString, new TypeToken<List<String>>(){}.getType());
+            List<String> roots = rawRoots.isEmpty() ? db.getAllIndexedFolders() : rawRoots;
 
             sendResultToJS(webView, new ApiResponse<>("statusUpdate",
                     new StatusUpdate("get all indexed folders",
@@ -220,7 +227,9 @@ public class WebAppInterface {
                 boolean success = false;
                 try {
                     db.getConnection().beginTransaction();
+
                     fileIndexer.updateIndex(folders);
+
                     db.getConnection().setTransactionSuccessful();
                     success = true;
                 } catch (IOException | SQLException e) {
@@ -249,7 +258,6 @@ public class WebAppInterface {
         try {
             Log.d(TAG, "indexFolder called");
             LogTimer indexFolderTotal = new LogTimer(true);
-
             sendResultToJS(webView, new ApiResponse<>("statusUpdate",
                     new StatusUpdate("indexFolder started")));
 
@@ -260,7 +268,7 @@ public class WebAppInterface {
                 return;
             }
             DatabaseManager db = ((MainActivity) context).getDbManager();
-            FileIndexer fileIndexer = new FileIndexer(db, context);
+            FileIndexer fileIndexer = new FileIndexer(db, context, settingsManager);
 
             fileIndexer.setProgressCallback((type, payload) -> {
                 sendResultToJS(webView, new ApiResponse<>(type, payload));
@@ -271,7 +279,9 @@ public class WebAppInterface {
                 boolean success = false;
                 try {
                     db.getConnection().beginTransaction();
+
                     fileIndexer.updateIndex(folders);
+
                     db.getConnection().setTransactionSuccessful();
                     success = true;
                 } catch (IOException | SQLException e) {
@@ -293,19 +303,20 @@ public class WebAppInterface {
     }
 
     @JavascriptInterface
-    public void rebuildIndex() {
+    public void rebuildIndex(String jsonArrayString) {
         try {
             Log.d(WebAppInterface.TAG, "Deleting indexes before rebuilding index");
             sendResultToJS(webView, new ApiResponse<>("statusUpdate",
                     new StatusUpdate("rebuildIndex started")));
             DatabaseManager db = ((MainActivity) context).getDbManager();
-            FileIndexer fileIndexer = new FileIndexer(db, context);
+            FileIndexer fileIndexer = new FileIndexer(db, context, settingsManager);
 
             fileIndexer.setProgressCallback((type, payload) -> {
                 sendResultToJS(webView, new ApiResponse<>(type, payload));
             });
 
-            List<String> roots = db.getAllIndexedFolders();
+            List<String> rawRoots = gson.fromJson(jsonArrayString, new TypeToken<List<String>>(){}.getType());
+            List<String> roots = rawRoots.isEmpty() ? db.getAllIndexedFolders() : rawRoots;
 
             new Thread(() -> {
                 LogTimer totalTimer = new LogTimer(true);
@@ -335,6 +346,7 @@ public class WebAppInterface {
                             new StatusUpdate("Updating index...")));
 
                     fileIndexer.updateIndex(folders);
+
                     db.getConnection().setTransactionSuccessful();
                     success = true;
 
@@ -401,5 +413,17 @@ public class WebAppInterface {
             e.printStackTrace(new PrintWriter(sw));
             Log.e(WebAppInterface.TAG, sw.toString());
         }
+    }
+
+    @JavascriptInterface
+    public void requestCurrentExtensions() {
+        String current = settingsManager.getAllowedExtensionsRaw();
+        final String js = "showPromptWithDefaults(" + JSONObject.quote(current) + ")";
+        webView.post(() -> webView.evaluateJavascript(js, null));
+    }
+
+    @JavascriptInterface
+    public void saveExtensions(String csv) {
+        settingsManager.saveAllowedExtensions(csv);
     }
 }

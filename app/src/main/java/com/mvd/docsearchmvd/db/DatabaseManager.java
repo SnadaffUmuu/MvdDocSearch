@@ -70,8 +70,15 @@ public class DatabaseManager {
                             "ON files(path)"
             );
 
-            db.execSQL("CREATE INDEX IF NOT EXISTS idx_tokens_token_id " +
-                    "ON tokens(token_id)");
+//            db.execSQL("CREATE INDEX IF NOT EXISTS idx_tokens_token_id " +
+//                    "ON tokens(token_id)");
+
+            db.execSQL("CREATE INDEX IF NOT EXISTS idx_tokens_token_id_file_id_positions " +
+                    "ON tokens(" +
+                    "token_id, " +
+                    "file_id, " +
+                    "positions" +
+                    ");");
 
             db.execSQL("CREATE INDEX IF NOT EXISTS idx_tokens_file_id " +
                     "ON tokens(file_id);");

@@ -161,10 +161,15 @@
     color: #66001a;
   }
 
-  #searchQuery {
+  #searchWrap {
     flex: 1 0 auto;
     margin-right: 10px;
-    padding-left: 7px;
+  }
+
+  #searchQuery {
+    display: block;
+    width: 100%;
+    height: 100%;
   }
 
   #searchResCount {
@@ -190,7 +195,7 @@
     flex-flow: row nowrap;
     justify-content: space-between;
     overflow: hidden;
-    align-items:center;
+    align-items: center;
   }
 
   .searchResult.current {
@@ -258,10 +263,10 @@
   }
 
   #lastTaskLog {
-    padding:5px;
+    padding: 5px;
     white-space: pre-wrap;
-    max-height:70vh;
-    overflow:auto;
+    max-height: 70vh;
+    overflow: auto;
     flex: 1 0 auto;
   }
 
@@ -273,11 +278,10 @@
   #previews {
     max-width: 100vw;
     overflow: auto;
-    height: 67vh;
+    height: 65vh;
     width: 100%;
     box-sizing: border-box;
     font-size: 17px;
-    flex: 1 1 auto;
   }
 
   #previewColsWrap {
@@ -369,31 +373,24 @@
   }
 
   .hasModal {
-    overflow:hidden;
+    overflow: hidden;
   }
 
   .hasModal:after {
-    position:fixed;
-    top:0;
-    bottom:0;
-    left:0;
-    right:0;
-    z-index:400;
-    background:var(--semiBgOverlayed);
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 400;
+    background: var(--semiBgOverlayed);
   }
 
   .modal_mini {
-    top:20vh;
-    bottom:20vh;
-    left:20px;
-    right:20px;
-  }
-
-  .closeModal {
-    bottom:5px;
-    right:5px;
-    position:absolute;
-
+    top: 20vh;
+    bottom: 20vh;
+    left: 20px;
+    right: 20px;
   }
 
   #indexedFoldersListContainer {
@@ -405,7 +402,7 @@
     flex: 1 1 auto;
     min-height: 0;
     overflow: auto;
-    padding-right:15px;
+    padding-right: 15px;
   }
 
   #theBar {
@@ -452,6 +449,12 @@
     line-height: 29px;
   }
 
+  .closeModal {
+    bottom: 10px;
+    right: 10px;
+    position: absolute;
+  }
+
   .spinner,
   #spinnerGlobal {
     position: fixed;
@@ -491,8 +494,8 @@
   }
 
   #progressBarWrap {
-    height:52px;
-    overflow:hidden;
+    height: 52px;
+    overflow: hidden;
   }
 
   #progressContainer,
@@ -536,19 +539,19 @@
     border-bottom: none;
   }
 
-  #statusMessage > div,
-  #lastTaskLog > div,
-  #searchLog > div {
+  #statusMessage>div,
+  #lastTaskLog>div,
+  #searchLog>div {
     padding: 3px 0;
     display: flex;
     flex-flow: row nowrap;
     justify-content: space-between;
-    border-bottom:1px dotted var(--borderNeutral);
+    border-bottom: 1px dotted var(--borderNeutral);
   }
 
-  #statusMessage > div > strong,
-  #lastTaskLog > div > strong,
-  #searchLog > div > strong {
+  #statusMessage>div>strong,
+  #lastTaskLog>div>strong,
+  #searchLog>div>strong {
     flex: 0 0 auto;
   }
 
@@ -557,6 +560,29 @@
     overflow: auto;
   }
 
+  #prefs {
+    padding: 10px;
+  }
+
+  .suggestions {
+    position: absolute;
+    overflow-y: auto;
+    background: var(--bg);
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    width: 100%;
+    z-index: 1000;
+  }
+
+  .suggestions li {
+    padding: 7px 10px;
+    border-bottom: 1px dotted var(--borderNeutral);
+  }
+
+  .suggestions li:hover {
+    background-color: #f0f0f0;
+  }
 </style>
 
 <body class="rowFlexContainer">
@@ -597,21 +623,28 @@
       <button onclick="rebuildIndex()">Rebuild</button>
       <button onclick="clearDB()" class="dangerousButton">Clear</button>
       <button onclick="Android.exportDB()">Export</button>
-      <button class="closeModalButton">X</button>
+      <button class="js-closeModal closeModalButton">X</button>
     </section>
   </div>
   <div id="prefs" class="modal hidden">
+    <section>
+      <button onclick="Android.requestCurrentExtensions()">Задать расширения</button>
+    </section>
+    <button class="js-closeModal closeModal">X</button>
   </div>
   <main>
     <div id="mainInner">
       <header class="minimalRow">
         <div class="colFlexContainer justified">
-          <input type="search" id="searchQuery" oninput="validateQuery(this)" list="searchSuggestions">
+          <div id="searchWrap">
+            <input type="search" autocomplete="off" id="searchQuery" oninput="validateQuery(this)"
+              list="searchSuggestions">
+            <div id="queryValidationMessage" class="hidden">Поиск не поддерживает пробелы, знаки препинания и эмодзи
+            </div>
+          </div>
           <button id="searchButton" class="minimalCol" onclick="doSearch()">Search</button>
         </div>
-        <div id="queryValidationMessage" class="hidden">Поиск не поддерживает пробелы, знаки препинания и эмодзи</div>
         <input type="hidden" id="currentSearchQuery">
-        <datalist id="searchSuggestions"></datalist>
         <div id="searchResultsHeader" class="colFlexContainer justified">
           <span>
             Query: <strong id="searchResQuery"></strong>. Results: <span id="searchResCount"></span>
@@ -621,7 +654,7 @@
       </header>
       <div id="searchLogWrap" class="hidden modal">
         <div id="searchLog"></div>
-        <button class="closeModal" onclick="toggleModalView('#searchLogWrap')">X</button>
+        <button class="js-closeModal closeModal">X</button>
       </div>
       <div id="searchResultWrap">
         <div id="searchResult"></div>
@@ -642,6 +675,7 @@
     </div>
   </main>
   <div id="error" class="hidden"></div>
+  <ul id="suggestionList" class="suggestions hidden"></ul>
   <script>
     const shortLimit = 50;
     const fullLimit = 500;
@@ -651,7 +685,7 @@
     const manageIndex = document.getElementById('manageIndex');
     const currentIndexPath = document.getElementById('currentIndexPath');
     const indexResultContainer = document.getElementById('indexResultContainer');
-    const indexedFildersListEl = document.getElementById('indexedFoldersList');
+    const indexedFoldersListEl = document.getElementById('indexedFoldersList');
     const deleteIndexesForFoldersButton = document.getElementById('deleteIndexesForFolders');
     const searchQueryEl = document.getElementById('searchQuery');
     const currentSearchQueryInput = document.getElementById('currentSearchQuery');
@@ -683,6 +717,8 @@
     const searchLog = document.getElementById('searchLog');
     const showSearchLog = document.getElementById('showSearchLog');
     const searchLogWrap = document.getElementById('searchLogWrap');
+    const allowedExtensions = document.getElementById('allowedExtensions');
+    const suggestionList = document.getElementById('suggestionList');
 
     let currentFileContent = null;
     let highlightedContent = null;
@@ -691,30 +727,101 @@
     function saveSearchQuery(query) {
       const keepCount = 10;
       if(!query || typeof query !== 'string') return;
-      const key = 'recentSearches';
-      let recent = JSON.parse(localStorage.getItem(key)) || [];
+      let recent = getRecentSearches();
       recent = recent.filter(item => item !== query);
       recent.unshift(query);
       if(recent.length > keepCount) {
         recent = recent.slice(0, keepCount);
       }
-      localStorage.setItem(key, JSON.stringify(recent));
+      localStorage.setItem('recentSearches', JSON.stringify(recent));
     }
 
     function getRecentSearches() {
       return JSON.parse(localStorage.getItem('recentSearches')) || [];
     }
 
-    function updateSuggestions() {
-      const datalist = document.getElementById('searchSuggestions');
+    function filterSuggestions(value) {
       const recent = getRecentSearches();
-      datalist.innerHTML = '';
+      return recent.filter(q => q.toLowerCase().includes(value.toLowerCase()));
+    }
+
+    function updateSuggestions() {
+      const recent = getRecentSearches();
+      suggestionList.innerHTML = '';
       recent.forEach(query => {
         const option = document.createElement('option');
         option.value = query;
-        datalist.appendChild(option);
+        suggestionList.appendChild(option);
       });
-    }    
+    }
+
+    function showSuggestions(filtered) {
+      suggestionList.innerHTML = '';
+      if(filtered.length === 0) {
+        suggestionList.classList.add('hidden');
+        return;
+      }
+
+      const inputRect = searchQuery.getBoundingClientRect();
+      const spaceBelow = window.innerHeight - inputRect.bottom;
+      suggestionList.style.maxHeight = `${(spaceBelow - 10)}px`;
+
+      filtered.forEach(query => {
+        const li = document.createElement('li');
+        li.textContent = query;
+        li.onclick = () => {
+          searchQuery.value = query;
+          suggestionList.classList.add('hidden');
+        };
+        suggestionList.appendChild(li);
+      });
+      positionSuggestionList();
+      suggestionList.classList.remove('hidden');
+    }
+
+    function positionSuggestionList() {
+      const rect = searchQuery.getBoundingClientRect();
+      suggestionList.style.position = 'absolute';
+      suggestionList.style.top = `${rect.bottom + window.scrollY}px`;
+      suggestionList.style.left = `${rect.left + window.scrollX}px`;
+      suggestionList.style.width = `${rect.width}px`;
+      const maxHeight = window.innerHeight - rect.bottom - 10;
+      suggestionList.style.maxHeight = `${maxHeight}px`;
+    }
+
+    document.addEventListener('click', (e) => {
+      if(!searchQuery.contains(e.target) && !suggestionList.contains(e.target)) {
+        suggestionList.classList.add('hidden');
+      }
+    });
+
+    searchQuery.addEventListener('compositionstart', () => {
+      isComposing = true;
+    });
+
+    let isComposing = false;
+    let composingText = '';
+
+    searchQuery.addEventListener('compositionupdate', (e) => {
+      composingText = e.data;
+      showSuggestions(filterSuggestions(composingText));
+    });
+
+    searchQuery.addEventListener('compositionend', () => {
+      isComposing = false;
+      composingText = '';
+      showSuggestions(filterSuggestions(searchQuery.value));
+    });
+
+    searchQuery.addEventListener('focus', () => {
+      showSuggestions(filterSuggestions(searchQuery.value));
+    });
+
+    searchQuery.addEventListener('input', () => {
+      if(!isComposing) {
+        showSuggestions(filterSuggestions(searchQuery.value));
+      }
+    });
 
     function doSearch() {
       if(!searchQueryEl.value.trim()) return;
@@ -740,7 +847,6 @@
       currentSearchQueryInput.value = searchQueryEl.value.trim();
 
       saveSearchQuery(currentSearchQueryInput.value);
-      updateSuggestions();
 
       toggleSpinner(true);
 
@@ -773,7 +879,7 @@
           }).join('');
           toggleSpinner(false);
           main.scroll({
-            top : 0,
+            top: 0,
             behavior: 'smooth'
           });
           timer.log('front: results to DOM finished');
@@ -817,6 +923,8 @@
         });
         excerptsContainer.innerHTML = excerpts.join('');
         excerptsContainer.style.display = '';
+        //scrollToBottom(main);
+        //scrollCurrentHitIntoView();
         displayFullFragment(indexes[0], indexes);
         prevChunk.classList.add('hidden');
       } else {
@@ -831,12 +939,12 @@
       const currentExcerpt = excerptsContainer.querySelector('.current');
       let prevExcerpt = null;
       let nextExcerpt = null;
-      if (currentExcerpt) {
+      if(currentExcerpt) {
         prevExcerpt = currentExcerpt.previousElementSibling ? currentExcerpt.previousElementSibling : null;
         nextExcerpt = currentExcerpt.nextElementSibling ? currentExcerpt.nextElementSibling : null;
       } else {
         const firstExcerpt = excerptsContainer.querySelector('.excerpt');
-        if (firstExcerpt) {
+        if(firstExcerpt) {
           nextExcerpt = firstExcerpt.nextElementSibling;
         }
       }
@@ -871,7 +979,6 @@
         }
         searchResEl.classList.add('current');
         currentHit = searchResEl.dataset.fileId;
-        console.log('front: search result element clicked')
         showExcerpts(searchResEl.dataset.filePath);
       }
     });
@@ -957,7 +1064,7 @@
       if(data) {
         el.textContent = prefix.replace('-', data);
         el.classList.remove('hidden');
-      } 
+      }
     }
 
     function renderProgress(data, isFinished) {
@@ -967,7 +1074,7 @@
       if(data.percent) {
         progressBarEl.value = data.percent;
         progressBarEl.classList.remove('hidden');
-      } 
+      }
       if(data.stage || data.stageElapsed !== undefined) {
         let output = '';
         if(data.stage) {
@@ -976,7 +1083,7 @@
         if(data.stageElapsed) {
           output += `<strong>${data.stageElapsed}</strong>`;
         }
-        if (output) {
+        if(output) {
           statusMessage.insertAdjacentHTML('beforeend', `<div>${output}</div>`);
           statusMessage.scrollTop = statusMessage.scrollHeight;
         }
@@ -1006,19 +1113,18 @@
         `
         }).join('');
       }
-      indexedFildersListEl.innerHTML = allFoldersRes;
-      indexedFildersListEl.classList.toggle('hidden', !allFoldersRes.length);
+      indexedFoldersListEl.innerHTML = allFoldersRes;
+      indexedFoldersListEl.classList.toggle('hidden', !allFoldersRes.length);
       deleteIndexesForFoldersButton.classList.toggle('hidden', !allFoldersRes.length);
     }
 
     renderIndexedFolders(JSON.parse(Android.getIndexedFolders()));
 
     function deleteIndexForSelectedFolders() {
-      //CHECKED
-      if(confirm("Точно удалить индекс по папке?")) {
+      if(confirm("Точно удалить индекс по папкам?")) {
         toggleSpinner(true);
         setTimeout(() => {
-          const selectedPaths = [...indexedFildersListEl.querySelectorAll('[type="checkbox"]:checked')].map(el => el.value);
+          const selectedPaths = [...indexedFoldersListEl.querySelectorAll('[type="checkbox"]:checked')].map(el => el.value);
           Android.deleteIndexesForPaths(JSON.stringify(selectedPaths))
         }, 0);
       }
@@ -1042,17 +1148,18 @@
       if(confirm("Точно обновить индекс? Индексируются только измененные и новые файлы")) {
         toggleSpinner(true);
         setTimeout(() => {
-          Android.updateIndex()
+          const selectedPaths = [...indexedFoldersListEl.querySelectorAll('[type="checkbox"]:checked')].map(el => el.value);
+          Android.updateIndex(JSON.stringify(selectedPaths));
         }, 0);
       }
     }
 
     function rebuildIndex() {
-      const isConfirmed = confirm("Точно перестроить заново весь индекс?");
-      if(isConfirmed) {
+      if(confirm("Точно перестроить заново весь индекс?")) {
         toggleSpinner(true);
         setTimeout(() => {
-          Android.rebuildIndex()
+          const selectedPaths = [...indexedFoldersListEl.querySelectorAll('[type="checkbox"]:checked')].map(el => el.value);
+          Android.rebuildIndex(JSON.stringify(selectedPaths))
         }, 0);
       }
     }
@@ -1106,8 +1213,9 @@
       console.log('front: received search query from Android');
       searchQueryEl.value = query;
       searchQueryEl.dispatchEvent(new Event('input'));
+      searchQueryEl.blur();
       searchButton.click();
-      searchButton.dispatchEvent(new Event('click'))
+      searchButton.dispatchEvent(new Event('click'));
     }
 
     function showError(error) {
@@ -1132,7 +1240,7 @@
     }
 
     document.body.addEventListener('click', (e) => {
-      if(e.target.classList.contains('closeModalButton')) {
+      if(e.target.classList.contains('js-closeModal')) {
         toggleModalView(e.target.closest('.modal'));
       }
     })
@@ -1216,7 +1324,7 @@
         if(data.stageElapsed) {
           output += `<strong>${data.stageElapsed}</strong>`;
         }
-        if (output) {
+        if(output) {
           searchLog.insertAdjacentHTML('beforeend', `<div>${output}</div>`);
           searchLog.scrollTop = statusMessage.scrollHeight;
           showSearchLog.classList.remove('hidden');
@@ -1232,7 +1340,7 @@
       const data = JSON.parse(res);
       console.log('front:nativeMessage: ' + res);
       switch(data.type) {
-        case 'search' : 
+        case 'search':
           onSearchProgress(data.data);
           break;
         case "indexFolder":
@@ -1249,6 +1357,34 @@
         case 'clearDB':
           reRenderIndexView(data)
           break;
+      }
+    }
+    /*
+        function scrollToBottom(el, isSmooth) {
+          const options = {
+            top: el.scrollHeight - el.clientHeight,
+          };
+          if(isSmooth) {
+            options.behavior = 'smooth';
+          }
+          el.scrollTo(options);
+        }
+    
+        function scrollCurrentHitIntoView() {
+          const current = document.querySelector('.searchResult.current');
+          const targetRect = current.getBoundingClientRect();
+          const containerRect = main.getBoundingClientRect();
+          const scrollTop = targetRect.top - containerRect.top + container.scrollTop;
+          container.scrollTo({
+            top: scrollTop,
+            behavior: 'smooth'
+          });
+        }
+    */
+    function showPromptWithDefaults(defaults) {
+      var response = prompt("Укажите расширения через запятую:", defaults);
+      if(response !== null) {
+        Android.saveExtensions(response);
       }
     }
 

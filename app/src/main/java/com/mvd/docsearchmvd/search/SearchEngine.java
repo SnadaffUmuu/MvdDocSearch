@@ -133,6 +133,7 @@ public class SearchEngine {
         if (progressCallback != null) {
             progressCallback.accept("search", new StatusUpdate("Computing hits finished", makingHitsTotal.getElapsed()));
         }
+        result.sort(Comparator.comparing(hit -> hit.path.toLowerCase()));
         return result;
     }
 }
