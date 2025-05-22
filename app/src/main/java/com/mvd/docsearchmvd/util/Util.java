@@ -10,6 +10,11 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import android.util.Log;
 
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
+
 public class Util {
     public static boolean isAsciiLetterOrCyrillicOrDigit(char ch) {
         return (ch >= 'a' && ch <= 'z') ||
@@ -34,5 +39,15 @@ public class Util {
         String jsCode = "window._onNativeMessage && window._onNativeMessage("
                 + JSONObject.quote(json) + ");";
         webView.post(() -> webView.evaluateJavascript(jsCode, null));
+    }
+
+    public static String formatUnitTime(Long time) {
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+
+        LocalDateTime dateTime = LocalDateTime.ofInstant(
+                Instant.ofEpochMilli(time),
+                ZoneId.systemDefault()
+        );
+        return dateTime.format(formatter);
     }
 }

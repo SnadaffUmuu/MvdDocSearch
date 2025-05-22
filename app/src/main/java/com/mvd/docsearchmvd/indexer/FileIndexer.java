@@ -124,7 +124,17 @@ public class FileIndexer {
 
     public void updateIndex(File[] folders) throws IOException, SQLException {
         Log.d(WebAppInterface.TAG, "updateIndex");
+        LogTimer updateIndexInnerTotal = new LogTimer(true);
+
+        if (progressCallback != null) {
+            progressCallback.accept("statusUpdate", new StatusUpdate("updateIndexInner started..."));
+        }
+
         LogTimer collectFilesTimer = new LogTimer(false);
+
+        if (progressCallback != null) {
+            progressCallback.accept("statusUpdate", new StatusUpdate("collecting files started..."));
+        }
 
         List<File> allFiles = collectAllFiles(folders);
         Set<String> actualPaths = allFiles.stream()
@@ -132,19 +142,25 @@ public class FileIndexer {
                 .collect(Collectors.toSet());
 
         if (progressCallback != null) {
-            progressCallback.accept("statusUpdate", new StatusUpdate("files collected", collectFilesTimer.getElapsed()));
+            progressCallback.accept("statusUpdate", new StatusUpdate("collecting files finished", collectFilesTimer.getElapsed()));
         }
 
         LogTimer deleteFilesTimer = new LogTimer(false);
-        db.deleteMissingFilesFromDb(actualPaths, folders);
+
         if (progressCallback != null) {
-            progressCallback.accept("statusUpdate", new StatusUpdate("missing files deleted from db", deleteFilesTimer.getElapsed()));
+            progressCallback.accept("statusUpdate", new StatusUpdate("deleting missing files from db..."));
         }
+
+        db.deleteMissingFilesFromDb(actualPaths, folders);
+
+        if (progressCallback != null) {
+            progressCallback.accept("statusUpdate", new StatusUpdate("deleting missing files finished", deleteFilesTimer.getElapsed()));
+        }
+
         filesDone = 0;
         startTime = System.currentTimeMillis();
         totalFiles = allFiles.size();
         Log.d(WebAppInterface.TAG, "allFiles size: " + totalFiles);
-        LogTimer indexTimer = new LogTimer(false);
         for (File file : allFiles) {
             Log.d(WebAppInterface.TAG, file.getAbsolutePath());
             indexFileIfNeeded(file);
@@ -155,7 +171,7 @@ public class FileIndexer {
             }
         }
         if (progressCallback != null) {
-            progressCallback.accept("statusUpdate", new StatusUpdate("all files indexed", indexTimer.getElapsed()));
+            progressCallback.accept("statusUpdate", new StatusUpdate("updateIndexInner finished", updateIndexInnerTotal.getElapsed()));
         }
     }
 

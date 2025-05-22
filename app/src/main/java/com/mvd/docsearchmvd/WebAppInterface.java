@@ -19,6 +19,7 @@ import com.google.gson.Gson;
 
 import com.mvd.docsearchmvd.model.ApiResponse;
 import com.mvd.docsearchmvd.util.LogTimer;
+import com.mvd.docsearchmvd.util.NativeLogger;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -47,12 +48,39 @@ public class WebAppInterface {
     @JavascriptInterface
     public String doSearch(String query) {
         try {
+            NativeLogger.resetLog();
+            LogTimer total = new LogTimer(true);
+
+            sendResultToJS(webView, new ApiResponse<>("search",
+                    new StatusUpdate("search started " + query)));
+//            NativeLogger.writeResultToFile(new ApiResponse<>("search",
+//                  new StatusUpdate("search started " + query)));
+
             Log.d(TAG, "back: doSearch called, query: " + query);
+
             DatabaseManager db = ((MainActivity) context).getDbManager();
-            Log.d(TAG, "doSearch about to start search");
+
+            db.setProgressCallback((type, payload) -> {
+//                sendResultToJS(webView, new ApiResponse<>(type, payload));
+//                NativeLogger.writeResultToFile(new ApiResponse<>(type, payload));
+            });
+
             SearchEngine se = new SearchEngine(db);
+
+            se.setProgressCallback((type, payload) -> {
+//                sendResultToJS(webView, new ApiResponse<>(type, payload));
+//                NativeLogger.writeResultToFile(new ApiResponse<>(type, payload));
+            });
+
             List<Hit> results = se.search(query);
+
             Log.d(TAG, "results num: " + results.size());
+
+            sendResultToJS(webView, new ApiResponse<>("search",
+                    new StatusUpdate("search finished", total.getElapsed())));
+//            NativeLogger.writeResultToFile(new ApiResponse<>("search",
+//                    new StatusUpdate("search finished", total.getElapsed())));
+
             return gson.toJson(new ApiResponse<List<Hit>>(results));
         } catch (Exception e) {
             return gson.toJson(new ApiResponse<>(
@@ -173,6 +201,9 @@ public class WebAppInterface {
             fileIndexer.setProgressCallback((type, payload) -> {
                 sendResultToJS(webView, new ApiResponse<>(type, payload));
             });
+            db.setProgressCallback((type, payload) -> {
+                sendResultToJS(webView, new ApiResponse<>(type, payload));
+            });
 
             LogTimer getAllFoldersTimer = new LogTimer(true);
 
@@ -217,12 +248,16 @@ public class WebAppInterface {
     public void indexFolder(String path) {
         try {
             Log.d(TAG, "indexFolder called");
+            LogTimer indexFolderTotal = new LogTimer(true);
+
             sendResultToJS(webView, new ApiResponse<>("statusUpdate",
                     new StatusUpdate("indexFolder started")));
+
             File folder = new File(path);
             if (folder == null || !folder.exists() || !folder.isDirectory()) {
                 Log.d(TAG, "Invalid folder");
                 sendResultToJS(webView, new ApiResponse<>("indexFolder", "Папки нет или это не папка: ", path));
+                return;
             }
             DatabaseManager db = ((MainActivity) context).getDbManager();
             FileIndexer fileIndexer = new FileIndexer(db, context);
@@ -230,6 +265,7 @@ public class WebAppInterface {
             fileIndexer.setProgressCallback((type, payload) -> {
                 sendResultToJS(webView, new ApiResponse<>(type, payload));
             });
+
             new Thread(() -> {
                 File[] folders = new File[] { folder };
                 boolean success = false;
@@ -246,7 +282,7 @@ public class WebAppInterface {
                 }
                 if (success) {
                     sendResultToJS(webView, new ApiResponse<>("statusFinish",
-                            new StatusUpdate("indexFolder"))
+                            new StatusUpdate("indexFolder finished", indexFolderTotal.getElapsed()))
                     );
                     sendResultToJS(webView, new ApiResponse<>("indexFolder", db.getAllFolders()));
                 }
@@ -270,18 +306,40 @@ public class WebAppInterface {
             });
 
             List<String> roots = db.getAllIndexedFolders();
+
             new Thread(() -> {
                 LogTimer totalTimer = new LogTimer(true);
+                sendResultToJS(webView, new ApiResponse<>("statusUpdate",
+                        new StatusUpdate("Rebuilding index...")));
+
                 File[] folders = roots.stream()
                         .map(File::new)
                         .toArray(File[]::new);
                 boolean success = false;
                 try {
                     db.getConnection().beginTransaction();
+
+                    LogTimer clearTablesTimer = new LogTimer(true);
+
+                    sendResultToJS(webView, new ApiResponse<>("statusUpdate",
+                            new StatusUpdate("Clearing tables...")));
+
                     db.clearTables(true);
+
+                    sendResultToJS(webView, new ApiResponse<>("statusUpdate",
+                            new StatusUpdate("Tables cleared", clearTablesTimer.getElapsed())));
+
+                    LogTimer indexingTotal = new LogTimer(true);
+
+                    sendResultToJS(webView, new ApiResponse<>("statusUpdate",
+                            new StatusUpdate("Updating index...")));
+
                     fileIndexer.updateIndex(folders);
                     db.getConnection().setTransactionSuccessful();
                     success = true;
+
+                    sendResultToJS(webView, new ApiResponse<>("statusUpdate",
+                            new StatusUpdate("Updating index finished", indexingTotal.getElapsed())));
                 } catch (IOException | SQLException e) {
                     sendResultToJS(webView, new ApiResponse<>("rebuildIndex",
                             "rebuildIndex error",
@@ -291,7 +349,7 @@ public class WebAppInterface {
                 }
                 if (success) {
                     sendResultToJS(webView, new ApiResponse<>("statusFinish",
-                            new StatusUpdate("rebuildIndex", totalTimer.getElapsed()))
+                            new StatusUpdate("Rebuilding index finished", totalTimer.getElapsed()))
                     );
                     sendResultToJS(webView, new ApiResponse<>("rebuildIndex", db.getAllFolders()));
                 }

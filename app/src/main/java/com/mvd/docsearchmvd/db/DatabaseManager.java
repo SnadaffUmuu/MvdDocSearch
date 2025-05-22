@@ -1,5 +1,7 @@
 package com.mvd.docsearchmvd.db;
 
+import static com.mvd.docsearchmvd.util.Util.formatUnitTime;
+
 import android.content.Context;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
@@ -7,7 +9,6 @@ import android.database.sqlite.SQLiteStatement;
 import android.util.Log;
 
 import com.mvd.docsearchmvd.WebAppInterface;
-import com.mvd.docsearchmvd.indexer.FileIndexer;
 import com.mvd.docsearchmvd.model.StatusUpdate;
 import com.mvd.docsearchmvd.util.LogTimer;
 
@@ -17,6 +18,7 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.function.BiConsumer;
 
@@ -96,38 +98,69 @@ public class DatabaseManager {
 
     public void clearTables(boolean keepRoots) {
 
-        LogTimer delTokens = new LogTimer(WebAppInterface.TAG, false);
+        LogTimer delTokens = new LogTimer(WebAppInterface.TAG, true);
+
+        if (progressCallback != null) {
+            progressCallback.accept("statusUpdate", new StatusUpdate("clearing tokens..."));
+        }
+
         db.execSQL("DELETE FROM tokens;");
+
         if (progressCallback != null) {
-            progressCallback.accept("statusUpdate", new StatusUpdate("deleted from tokens", delTokens.getElapsed()));
+            progressCallback.accept("statusUpdate", new StatusUpdate("clearing tokens finished", delTokens.getElapsed()));
         }
 
-        LogTimer delFiles = new LogTimer(WebAppInterface.TAG, false);
+        LogTimer delFiles = new LogTimer(WebAppInterface.TAG, true);
+
+        if (progressCallback != null) {
+            progressCallback.accept("statusUpdate", new StatusUpdate("clearing files..."));
+        }
+
         db.execSQL("DELETE FROM files;");
+
         if (progressCallback != null) {
-            progressCallback.accept("statusUpdate", new StatusUpdate("deleted from files", delFiles.getElapsed()));
+            progressCallback.accept("statusUpdate", new StatusUpdate("clearing files finished", delFiles.getElapsed()));
         }
 
-        LogTimer delDict = new LogTimer(WebAppInterface.TAG, false);
-        db.execSQL("DELETE FROM dict;");
+        LogTimer delDict = new LogTimer(WebAppInterface.TAG, true);
+
         if (progressCallback != null) {
-            progressCallback.accept("statusUpdate", new StatusUpdate("deleted from dict", delDict.getElapsed()));
+            progressCallback.accept("statusUpdate", new StatusUpdate("clearing dict..."));
         }
-        LogTimer delRoots = new LogTimer(WebAppInterface.TAG, false);
+
+        db.execSQL("DELETE FROM dict;");
+
+        if (progressCallback != null) {
+            progressCallback.accept("statusUpdate", new StatusUpdate("clearing dict finished", delDict.getElapsed()));
+        }
+
+        LogTimer delRoots = new LogTimer(WebAppInterface.TAG, true);
+
+        if (progressCallback != null) {
+            progressCallback.accept("statusUpdate", new StatusUpdate("clearing indexed_folders..."));
+        }
+
         if (!keepRoots) {
             db.execSQL("DELETE FROM indexed_folders;");
         }
+
         if (progressCallback != null) {
-            progressCallback.accept("statusUpdate", new StatusUpdate("deleted from indexed_folders", delRoots.getElapsed()));
+            progressCallback.accept("statusUpdate", new StatusUpdate("clearing indexed_folders finished", delRoots.getElapsed()));
         }
     }
 
     public String updateFileMetadata(File file) throws IOException {
         Log.d(WebAppInterface.TAG, "updateFileMetadata");
+
+        LogTimer updateMetadataTotal = new LogTimer(true);
+
+        if (progressCallback != null) {
+            progressCallback.accept("statusUpdate", new StatusUpdate("Updating metadata (" + file.getName() + ")..."));
+        }
+
         String filePath = file.getAbsolutePath();
         long fileSize = file.length();
         long lastModified = file.lastModified();
-
         Cursor cursor = db.rawQuery("SELECT size, last_modified FROM files WHERE path = ?", new String[]{filePath});
 
         try {
@@ -138,7 +171,6 @@ public class DatabaseManager {
                 long existingDate = cursor.getLong(1);
 
                 if (existingSize != fileSize || existingDate != lastModified) {
-                    // Если размер или дата изменились, обновляем запись
 //                    Log.d(WebAppInterface.TAG, "file changed, updating DB");
                     String updateSql = "UPDATE files SET size = ?, last_modified = ? WHERE path = ?";
                     SQLiteStatement stmt = db.compileStatement(updateSql);
@@ -147,8 +179,14 @@ public class DatabaseManager {
                     stmt.bindString(3, filePath);
                     stmt.executeUpdateDelete();
 //                    Log.d(WebAppInterface.TAG, "[INFO] Обновление файла: " + filePath);
+                    if (progressCallback != null) {
+                        progressCallback.accept("statusUpdate", new StatusUpdate("Updating metadata finished: bd updated", updateMetadataTotal.getElapsed()));
+                    }
                     return new String(Files.readAllBytes(file.toPath()), StandardCharsets.UTF_8);
                 } else {
+                    if (progressCallback != null) {
+                        progressCallback.accept("statusUpdate", new StatusUpdate("Updating metadata finished: unchanged", updateMetadataTotal.getElapsed()));
+                    }
                     return null;
                 }
             } else {
@@ -162,6 +200,9 @@ public class DatabaseManager {
 
 //                Log.d(WebAppInterface.TAG, "[INFO] Новый файл: " + filePath);
 //                Log.d(WebAppInterface.TAG, "Try to read the content now...");
+                if (progressCallback != null) {
+                    progressCallback.accept("statusUpdate", new StatusUpdate("Updating metadata finished: new file added", updateMetadataTotal.getElapsed()));
+                }
                 return new String(Files.readAllBytes(file.toPath()), StandardCharsets.UTF_8);
             }
         } finally {
@@ -229,10 +270,18 @@ public class DatabaseManager {
         }
     }
 
-    public Map<Integer, List<Integer>> getFilesWithPositions(String query) {
+    public Map<Integer, List<Integer>> getFilesWithPositions(String token) {
         LogTimer filesPos = new LogTimer(true);
-        LogTimer total = new LogTimer(WebAppInterface.TAG, false);
         Map<Integer, List<Integer>> result = new HashMap<>();
+        LogTimer total = new LogTimer(WebAppInterface.TAG, false);
+        if (progressCallback != null) {
+            progressCallback.accept("search", new StatusUpdate("reading [" + token + "] from tokens..."));
+        }
+
+        LogTimer bdPrepare = new LogTimer(true);
+        if (progressCallback != null) {
+            progressCallback.accept("search", new StatusUpdate("prepare query..."));
+        }
         Cursor cursor = db.rawQuery(
         "SELECT t.file_id, t.positions, f.path " +
                 "FROM tokens t " +
@@ -240,32 +289,49 @@ public class DatabaseManager {
                 "JOIN files f ON t.file_id = f.id " +
                 "WHERE d.token = ? " +
                 "ORDER BY t.file_id",
-        new String[]{query});
-        int i = 0;
+        new String[]{token});
+        if (progressCallback != null) {
+            progressCallback.accept("search", new StatusUpdate("prepare query finished", bdPrepare.getElapsed()));
+        }
         try {
             while (cursor.moveToNext()) {
+                LogTimer t = new LogTimer(true);
+                progressCallback.accept("search", new StatusUpdate("getting fields values..."));
+
                 int fileId = cursor.getInt(0);
                 String posString = cursor.getString(1);
+
+                progressCallback.accept("search", new StatusUpdate("finished", t.getElapsed()));
+
                 // Разделяем строку позиций по запятой и преобразуем в числа
+                LogTimer tt = new LogTimer(true);
+                progressCallback.accept("search", new StatusUpdate("splitting and casting to digits..."));
+
                 String[] splittedPostings = posString.split(",");
                 List<Integer> positions = new ArrayList<>(splittedPostings.length);
-                //LogTimer tt = new LogTimer(WebAppInterface.TAG, true);
                 for (String part : splittedPostings) {
                     positions.add(Integer.parseInt(part.trim()));
                 }
-                //tt.log("positions split and parsed as Integer");
+
+                progressCallback.accept("search", new StatusUpdate("finished", t.getElapsed()));
+
                 // Добавляем в Map — если ключ уже есть, объединяем списки
+                LogTimer ttt = new LogTimer(true);
+                progressCallback.accept("search", new StatusUpdate("adding to map and merging common lists..."));
+
                 result.merge(fileId, positions, (oldList, newList) -> {
                     oldList.addAll(newList);
                     return oldList;
                 });
+
+                progressCallback.accept("search", new StatusUpdate("finished", t.getElapsed()));
             }
         } finally {
             cursor.close();
         }
-        total.logTotal("DatabaseManager: result for query ready");
+        total.logTotal("DatabaseManager: result for token ready");
         if (progressCallback != null) {
-            progressCallback.accept("statusUpdate", new StatusUpdate("files with positions computed", filesPos.getElapsed()));
+            progressCallback.accept("search", new StatusUpdate("reading [" + token + "] from tokens finished", filesPos.getElapsed()));
         }
         return result;
     }

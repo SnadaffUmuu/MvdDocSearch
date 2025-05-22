@@ -2,6 +2,8 @@ package com.mvd.docsearchmvd.util;
 
 import android.util.Log;
 
+import java.util.Locale;
+
 public class LogTimer {
     private long startTime;
     private long lastTime;
@@ -53,7 +55,17 @@ public class LogTimer {
     }
 
     private String formatElapsed(long ms) {
-        return (ms < 1000) ? ms + " ms" : String.format("%.2f s", ms / 1000.0);
+        if (ms < 1000) {
+            return ms + " ms";
+        } else if (ms < 60000) {
+            double seconds = ms / 1000.0;
+            double roundedUp = Math.ceil(seconds * 10) / 10.0;
+            return String.format(Locale.US, "%.1f s", roundedUp);
+        } else {
+            double minutes = ms / 60000.0;
+            double roundedUp = Math.ceil(minutes * 10) / 10.0;
+            return String.format(Locale.US, "%.1f m", roundedUp);
+        }
     }
 
     public void reset() {

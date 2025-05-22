@@ -3,6 +3,7 @@ package com.mvd.docsearchmvd.search;
 import com.mvd.docsearchmvd.WebAppInterface;
 import com.mvd.docsearchmvd.db.DatabaseManager;
 import com.mvd.docsearchmvd.model.Hit;
+import com.mvd.docsearchmvd.model.StatusUpdate;
 import com.mvd.docsearchmvd.util.LogTimer;
 
 import java.io.File;
@@ -26,8 +27,6 @@ public class SearchEngine {
     }
 
     public List<Hit> search(String initialQuery) throws SQLException {
-        LogTimer total = new LogTimer(WebAppInterface.TAG, false);
-        total.logElapsed("SearchEngine: starting search" + initialQuery);
         String query = initialQuery.toLowerCase(Locale.ROOT);
         List<String> queryTokens = new ArrayList<>();
         int pos = 0;
@@ -49,23 +48,41 @@ public class SearchEngine {
             String tokenStr = query.substring(start, pos);
             queryTokens.add(tokenStr);
         }
-        List<Map<Integer, List<Integer>>> postings = new ArrayList<>();
 
+        LogTimer collectPostings = new LogTimer(false);
+        if (progressCallback != null) {
+            progressCallback.accept("search", new StatusUpdate("Collecting postings for tokens..."));
+        }
+
+        List<Map<Integer, List<Integer>>> postings = new ArrayList<>();
         for (String token : queryTokens) {
             Map<Integer, List<Integer>> tokenPostings = db.getFilesWithPositions(token);
             postings.add(tokenPostings);
         }
+        if (progressCallback != null) {
+            progressCallback.accept("search", new StatusUpdate("Collecting postings finished (" + postings.size() + ")", collectPostings.getElapsed()));
+        }
+
+        LogTimer sumCommonFiles = new LogTimer(false);
+        if (progressCallback != null) {
+            progressCallback.accept("search", new StatusUpdate("Retaining common files..."));
+        }
 
         Set<Integer> commonFiles = new HashSet<>(postings.get(0).keySet());
-
         for (int i = 1; i < postings.size(); i++) {
             commonFiles.retainAll(postings.get(i).keySet());
         }
 
-        List<Hit> result = new ArrayList<>();
+        if (progressCallback != null) {
+            progressCallback.accept("search", new StatusUpdate("Retaining common files finished (" + commonFiles.size() + ")", sumCommonFiles.getElapsed()));
+        }
 
+        LogTimer makingHitsTotal = new LogTimer(true);
+        if (progressCallback != null) {
+            progressCallback.accept("search", new StatusUpdate("Computing hits..."));
+        }
+        List<Hit> result = new ArrayList<>();
         for (int fileId : commonFiles) {
-            LogTimer tt = new LogTimer(WebAppInterface.TAG, true);
             List<Integer> base = postings.get(0).get(fileId);
             if (base == null || base.isEmpty()) continue;
             List<Integer> intersection = new ArrayList<>(base); // копия для пересечений
@@ -113,7 +130,9 @@ public class SearchEngine {
                 }
             }
         }
-        total.logTotal("SearchEngine: search finished, found: " + result.size());
+        if (progressCallback != null) {
+            progressCallback.accept("search", new StatusUpdate("Computing hits finished", makingHitsTotal.getElapsed()));
+        }
         return result;
     }
 }

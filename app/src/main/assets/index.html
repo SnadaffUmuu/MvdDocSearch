@@ -14,23 +14,23 @@
     --text-accent: #0018a3;
     --text-accent-border: #828aff;
     --text-accent-bg: #f7e7ee;
-    --text-accent-bg-deep: #dedfff;
+    --text-accent-bg-deep: #dde3ff;
     --borderDefault: var(--text-color);
     --borderNeutral: gray;
     --semiBgOverlayed: #f5dae573;
-    --thinOverlayed: #f5dae544;
+    --thinOverlayed: #ff60a14f;
     --previewNavDotsBg: #e9a6c478;
   }
 
   body.night {
     --bg: #1e1e1e;
     --bgDeep: #000;
-    --text-color: #cecbc9;
+    --text-color: #ad9f98;
     --button: #3c3c3c;
     --text-accent: #b4bd6a;
     --text-accent-border: #7c7c7d;
-    --text-accent-bg: #344134;
-    --text-accent-bg-deep: #262f26;
+    --text-accent-bg: #2a2e2a;
+    --text-accent-bg-deep: #2d342d;
     --inputBg: #464646;
     --errorBox: #7c7c7d;
     --borderDefault: var(--text-color);
@@ -54,7 +54,7 @@
     background: var(--bg);
     color: var(--text-color);
     font-size: 14px;
-    position:relative;
+    position: relative;
   }
 
   h4,
@@ -137,7 +137,7 @@
   }
 
   .button_small {
-    height:20px;
+    height: 20px;
     padding: 0 5px;
   }
 
@@ -176,7 +176,7 @@
     overflow: auto;
     box-sizing: border-box;
     flex: 1 1 auto;
-    padding-top: 55px;
+    padding-top: 72px;
   }
 
   #searchResultsHeader {
@@ -190,6 +190,7 @@
     flex-flow: row nowrap;
     justify-content: space-between;
     overflow: hidden;
+    align-items:center;
   }
 
   .searchResult.current {
@@ -256,6 +257,14 @@
     font-size: 13px;
   }
 
+  #lastTaskLog {
+    padding:5px;
+    white-space: pre-wrap;
+    max-height:70vh;
+    overflow:auto;
+    flex: 1 0 auto;
+  }
+
   #fileName {
     margin: 0;
     padding: 0;
@@ -297,9 +306,9 @@
     left: 0;
     right: 0;
     z-index: 100;
-    background-image: radial-gradient(var(--thinOverlayed) 3px, transparent 0px);
+    background-image: radial-gradient(var(--thinOverlayed) 1px, transparent 0px);
     background-repeat: repeat;
-    background-size: 10px 10px;
+    background-size: 4px 4px;
     background-position: center;
     background-color: transparent;
     border-radius: 0;
@@ -350,7 +359,7 @@
 
   .modal {
     z-index: 500;
-    position: fixed;
+    position: fixed !important;
     top: 0;
     bottom: 0;
     left: 0;
@@ -359,14 +368,44 @@
     background: var(--bg);
   }
 
+  .hasModal {
+    overflow:hidden;
+  }
+
+  .hasModal:after {
+    position:fixed;
+    top:0;
+    bottom:0;
+    left:0;
+    right:0;
+    z-index:400;
+    background:var(--semiBgOverlayed);
+  }
+
+  .modal_mini {
+    top:20vh;
+    bottom:20vh;
+    left:20px;
+    right:20px;
+  }
+
+  .closeModal {
+    bottom:5px;
+    right:5px;
+    position:absolute;
+
+  }
+
   #indexedFoldersListContainer {
     overflow: auto;
+    flex: 1 0 auto;
   }
 
   #indexResultContainer {
     flex: 1 1 auto;
     min-height: 0;
     overflow: auto;
+    padding-right:15px;
   }
 
   #theBar {
@@ -413,8 +452,9 @@
     line-height: 29px;
   }
 
-  .spinner, #spinnerGlobal {
-    position: absolute;
+  .spinner,
+  #spinnerGlobal {
+    position: fixed;
     z-index: 1000;
     top: 0;
     left: 0;
@@ -427,7 +467,7 @@
     align-items: center;
   }
 
-  .spinner:not(.noSpinner):before, 
+  .spinner:not(.noSpinner):before,
   #spinnerGlobal:not(.noSpinner):before {
     content: " ";
     display: block;
@@ -450,21 +490,29 @@
     }
   }
 
-  #progressContainer {
-    width: calc(100% - 40px);
-    margin:10px auto;
-    background: var(--bg);
-    border-radius:5px;
-    padding:10px 10px 25px;
-    border:1px solid var(--borderNeutral);
-    box-sizing: border-box;
-    position:relative;
+  #progressBarWrap {
+    height:52px;
+    overflow:hidden;
   }
 
-  #closeProgress {
-    position:absolute;
-    bottom:15px;
-    right:15px;
+  #progressContainer,
+  #searchLogWrap {
+    width: calc(100% - 40px);
+    margin: 10px auto;
+    background: var(--bg);
+    border-radius: 5px;
+    padding: 10px 10px 25px;
+    border: 1px solid var(--borderNeutral);
+    box-sizing: border-box;
+    position: relative;
+
+  }
+
+  #closeProgress,
+  #closeSearchLog {
+    position: absolute;
+    bottom: 15px;
+    right: 15px;
   }
 
   #fileName {
@@ -477,27 +525,38 @@
 
   #statusMessage {
     height: 80px;
-    overflow:auto;
-    margin-bottom:5px;
-    border-bottom:1px dotted var(--text-color);
-    padding:5px;
+    overflow: auto;
+    margin-bottom: 5px;
+    border-bottom: 1px dotted var(--text-color);
+    padding: 5px;
   }
 
   #statusMessage.expanded {
-    height:60vh;
-    border-bottom:none;
+    height: 50vh;
+    border-bottom: none;
   }
 
-  #statusMessage > div {
+  #statusMessage > div,
+  #lastTaskLog > div,
+  #searchLog > div {
     padding: 3px 0;
-    display:flex;
-    flex-flow:row nowrap;
+    display: flex;
+    flex-flow: row nowrap;
     justify-content: space-between;
+    border-bottom:1px dotted var(--borderNeutral);
   }
 
-  #statusMessage > div > strong {
+  #statusMessage > div > strong,
+  #lastTaskLog > div > strong,
+  #searchLog > div > strong {
     flex: 0 0 auto;
   }
+
+  #searchLog {
+    height: 100%;
+    overflow: auto;
+  }
+
 </style>
 
 <body class="rowFlexContainer">
@@ -509,9 +568,11 @@
   <div id="spinnerGlobal" class="hidden">
     <div id="progressContainer" class="hidden">
       <div id="statusMessage"></div>
-      <div id="fileName" class="hidden" data-initial-text="Файл: -">Файл: -</div>
-      <div id="elapsed" class="hidden" data-initial-text="Time: -s">Time: -s</div>
-      <progress class="hidden" id="progressBar" value="0" max="100"></progress>
+      <div id="progressBarWrap">
+        <div id="fileName" class="hidden" data-initial-text="Файл: -">Файл: -</div>
+        <div id="elapsed" class="hidden" data-initial-text="Time: -s">Time: -s</div>
+        <progress class="hidden" id="progressBar" value="0" max="100"></progress>
+      </div>
       <button id="closeProgress" class="hidden" onclick="toggleSpinner(false)">X</button>
     </div>
   </div>
@@ -529,6 +590,7 @@
       <section id="indexedFoldersListContainer">
         <ul id="indexedFoldersList" class="hidden"></ul>
       </section>
+      <section id="lastTaskLog" class="hidden"></section>
     </section>
     <section class="minimalRow colFlexContainer justified">
       <button onclick="updateIndex()">Update</button>
@@ -544,15 +606,23 @@
     <div id="mainInner">
       <header class="minimalRow">
         <div class="colFlexContainer justified">
-          <input type="search" id="searchQuery" oninput="validateQuery(this)">
+          <input type="search" id="searchQuery" oninput="validateQuery(this)" list="searchSuggestions">
           <button id="searchButton" class="minimalCol" onclick="doSearch()">Search</button>
         </div>
         <div id="queryValidationMessage" class="hidden">Поиск не поддерживает пробелы, знаки препинания и эмодзи</div>
         <input type="hidden" id="currentSearchQuery">
-        <div id="searchResultsHeader">
-          Results: <span id="searchResCount"></span>
+        <datalist id="searchSuggestions"></datalist>
+        <div id="searchResultsHeader" class="colFlexContainer justified">
+          <span>
+            Query: <strong id="searchResQuery"></strong>. Results: <span id="searchResCount"></span>
+          </span>
+          <button id="showSearchLog" class="button_small hidden" onclick="showLog()">?</button>
         </div>
       </header>
+      <div id="searchLogWrap" class="hidden modal">
+        <div id="searchLog"></div>
+        <button class="closeModal" onclick="toggleModalView('#searchLogWrap')">X</button>
+      </div>
       <div id="searchResultWrap">
         <div id="searchResult"></div>
       </div>
@@ -577,6 +647,8 @@
     const fullLimit = 500;
     const stringLimit = 80; //kb
     const prefix = "/storage/emulated/0";
+
+    const manageIndex = document.getElementById('manageIndex');
     const currentIndexPath = document.getElementById('currentIndexPath');
     const indexResultContainer = document.getElementById('indexResultContainer');
     const indexedFildersListEl = document.getElementById('indexedFoldersList');
@@ -599,19 +671,56 @@
     const searchButton = document.getElementById('searchButton');
     const errorContainer = document.getElementById('error');
     const mainInner = document.getElementById('mainInner');
+    const main = document.querySelector('main');
     const searchResCount = document.getElementById('searchResCount');
     const prefs = document.getElementById('prefs');
     const spinnerGlobal = document.getElementById('spinnerGlobal');
     const closeProgress = document.getElementById('closeProgress');
+    const searchResQuery = document.getElementById('searchResQuery');
+    const prevChunk = document.getElementById('prevChunk');
+    const nextChunk = document.getElementById('nextChunk');
+    const lastTaskLog = document.getElementById('lastTaskLog');
+    const searchLog = document.getElementById('searchLog');
+    const showSearchLog = document.getElementById('showSearchLog');
+    const searchLogWrap = document.getElementById('searchLogWrap');
 
     let currentFileContent = null;
     let highlightedContent = null;
     let currentHit = null;
 
+    function saveSearchQuery(query) {
+      const keepCount = 10;
+      if(!query || typeof query !== 'string') return;
+      const key = 'recentSearches';
+      let recent = JSON.parse(localStorage.getItem(key)) || [];
+      recent = recent.filter(item => item !== query);
+      recent.unshift(query);
+      if(recent.length > keepCount) {
+        recent = recent.slice(0, keepCount);
+      }
+      localStorage.setItem(key, JSON.stringify(recent));
+    }
+
+    function getRecentSearches() {
+      return JSON.parse(localStorage.getItem('recentSearches')) || [];
+    }
+
+    function updateSuggestions() {
+      const datalist = document.getElementById('searchSuggestions');
+      const recent = getRecentSearches();
+      datalist.innerHTML = '';
+      recent.forEach(query => {
+        const option = document.createElement('option');
+        option.value = query;
+        datalist.appendChild(option);
+      });
+    }    
+
     function doSearch() {
-      if (!searchQueryEl.value.trim()) return;
-      if (containsDisallowedCharacters(searchQueryEl.value.trim())) {
+      if(!searchQueryEl.value.trim()) return;
+      if(containsDisallowedCharacters(searchQueryEl.value.trim())) {
         toggleQueryValidationMessage(true);
+        currentSearchQueryInput.value = '';
         return;
       }
       excerptsContainer.innerHTML = '';
@@ -619,6 +728,8 @@
       searchResultEl.innerHTML = '';
       searchResult.innerHTML = '';
       searchResCount.innerHTML = '';
+      showSearchLog.classList.add('hidden');
+      searchLog.innerHTML = '';
       currentHit = null;
       const timer = createLogTimer('WebClient', false);
       timer.log('front: doSearch started');
@@ -626,7 +737,11 @@
         left: 0,
         behavior: 'smooth'
       })
-      currentSearchQueryInput.value = searchQueryEl.value;
+      currentSearchQueryInput.value = searchQueryEl.value.trim();
+
+      saveSearchQuery(currentSearchQueryInput.value);
+      updateSuggestions();
+
       toggleSpinner(true);
 
       setTimeout(() => {
@@ -635,11 +750,12 @@
         const data = Android.doSearch(searchQueryEl.value.trim());
 
         const res = JSON.parse(data);
-        if (res.error) {
+        if(res.error) {
           searchResultEl.innerHTML = res.error + '<br>' + res.errorDetails;;
         } else {
           const parsed = res.data;
           searchResCount.textContent = parsed.length;
+          searchResQuery.textContent = currentSearchQueryInput.value;
           searchResultEl.innerHTML = parsed.map(o => {
             const actualPath = o.path.startsWith(prefix) ? o.path.slice(prefix.length) : o.path;
             const parts = actualPath.split('/');
@@ -656,6 +772,10 @@
         `
           }).join('');
           toggleSpinner(false);
+          main.scroll({
+            top : 0,
+            behavior: 'smooth'
+          });
           timer.log('front: results to DOM finished');
         }
         timer.logTotal('front: doSearch finished');
@@ -663,7 +783,7 @@
     }
 
     function onFolderChosen(path) {
-      if (confirm("Проиндексировать папку " + path.replace(prefix, '') + "?")) {
+      if(confirm("Проиндексировать папку " + path.replace(prefix, '') + "?")) {
         currentIndexPath.value = path;
         toggleSpinner(true);
         setTimeout(() => {
@@ -676,7 +796,7 @@
       console.log('front: loading file content', path);
       const query = currentSearchQueryInput.value;
       const response = JSON.parse(Android.getFileContent(path));
-      if (response.success) {
+      if(response.success) {
         currentFileContent = response.data;
         excerptsContainer.innerHTML = '';
         fullPreviewEl.innerHTML = '';
@@ -694,10 +814,11 @@
           const textAfter = currentFileContent.substring(index + query.length, index + query.length + shortLimit);
           const trueQuery = currentFileContent.substring(index, index + query.length);
           excerpts.push(`<div class="excerpt" data-index="${index}">${textBefore}<mark>${trueQuery}</mark>${textAfter}</div>`);
-          displayFullFragment(index, indexes);
         });
         excerptsContainer.innerHTML = excerpts.join('');
         excerptsContainer.style.display = '';
+        displayFullFragment(indexes[0], indexes);
+        prevChunk.classList.add('hidden');
       } else {
         console.error('front: getFileContent error:', response.error);
         console.debug('details :', response.errorDetails);
@@ -707,6 +828,20 @@
 
     function displayFullFragment(index, indexes) {
       const query = currentSearchQueryInput.value;
+      const currentExcerpt = excerptsContainer.querySelector('.current');
+      let prevExcerpt = null;
+      let nextExcerpt = null;
+      if (currentExcerpt) {
+        prevExcerpt = currentExcerpt.previousElementSibling ? currentExcerpt.previousElementSibling : null;
+        nextExcerpt = currentExcerpt.nextElementSibling ? currentExcerpt.nextElementSibling : null;
+      } else {
+        const firstExcerpt = excerptsContainer.querySelector('.excerpt');
+        if (firstExcerpt) {
+          nextExcerpt = firstExcerpt.nextElementSibling;
+        }
+      }
+      prevChunk.classList.toggle('hidden', !prevExcerpt);
+      nextChunk.classList.toggle('hidden', !nextExcerpt);
 
       const textBefore = highlightOccurrences(currentFileContent.substring(Math.max(0, index - fullLimit), index), query);
       const textAfter = highlightOccurrences(currentFileContent.substring(index + query.length, Math.min(index + query.length + fullLimit, currentFileContent.length)), query);
@@ -727,10 +862,10 @@
 
     document.addEventListener('click', (e) => {
       const searchResEl = e.target.classList.contains('searchResult') ? e.target : e.target.closest('.searchResult');
-      if (searchResEl) {
-        if (currentHit != null) {
+      if(searchResEl) {
+        if(currentHit != null) {
           const el = document.querySelector(`[data-file-id='${currentHit}']`);
-          if (el) {
+          if(el) {
             el.classList.remove('current');
           }
         }
@@ -743,10 +878,9 @@
 
     document.addEventListener('click', (e) => {
       const excerptEl = e.target.classList.contains('excerpt') ? e.target : e.target.closest('.excerpt');
-      if (excerptEl) {
+      if(excerptEl) {
         document.querySelector('.excerpt.current')?.classList.remove('current');
         excerptEl.classList.add('current');
-        console.log('front: excerpt element clicked, ' + excerptEl.dataset.index);
         displayFullFragment(parseInt(excerptEl.dataset.index));
         previewsEl.scrollTo({
           left: fullPreviewOuter.offsetLeft,
@@ -772,7 +906,7 @@
       const results = [];
       let match;
 
-      while ((match = regex.exec(text)) !== null) {
+      while((match = regex.exec(text)) !== null) {
         const start = match.index;
         const end = start + match[0].length;
 
@@ -784,7 +918,7 @@
           end
         });
 
-        if (match.index === regex.lastIndex) regex.lastIndex++;
+        if(match.index === regex.lastIndex) regex.lastIndex++;
       }
 
       return results;
@@ -799,9 +933,9 @@
       let match;
       const results = [];
 
-      while ((match = regex.exec(text)) !== null) {
+      while((match = regex.exec(text)) !== null) {
         results.push(match.index);
-        if (match.index === regex.lastIndex) {
+        if(match.index === regex.lastIndex) {
           regex.lastIndex++;
         }
       }
@@ -810,7 +944,7 @@
     }
 
     function highlightOccurrences(text, searchString) {
-      if (!searchString) return text;
+      if(!searchString) return text;
       const regex = new RegExp(escapeRegExp(searchString), 'g');
       let matchCount = 0;
       return text.replace(regex, (match) => {
@@ -820,41 +954,38 @@
 
     function updateProgressUiEl(el, data) {
       const prefix = el.dataset?.initialText || '';
-      if (data) {
+      if(data) {
         el.textContent = prefix.replace('-', data);
         el.classList.remove('hidden');
-      } else {
-        el.textContent = prefix;
-        el.classList.add('hidden');
-      }
+      } 
     }
 
     function renderProgress(data, isFinished) {
       spinnerGlobal.classList.add('noSpinner');
       updateProgressUiEl(progressFileNameEl, data.fileName);
       updateProgressUiEl(progressElapsedEl, data.elapsed);
-      if (data.percent) {
+      if(data.percent) {
         progressBarEl.value = data.percent;
         progressBarEl.classList.remove('hidden');
-      } else {
-        resetProgressBar();
-      }
-      if (data.stage || data.stageElapsed !== undefined) {
+      } 
+      if(data.stage || data.stageElapsed !== undefined) {
         let output = '';
-        if (data.stage) {
+        if(data.stage) {
           output = `<span>${data.stage}</span>`;
         }
-        if (data.stageElapsed) {
+        if(data.stageElapsed) {
           output += `<strong>${data.stageElapsed}</strong>`;
         }
-        statusMessage.insertAdjacentHTML('beforeend', `<div>${output}</div>`);
-        statusMessage.scrollTop = statusMessage.scrollHeight;
+        if (output) {
+          statusMessage.insertAdjacentHTML('beforeend', `<div>${output}</div>`);
+          statusMessage.scrollTop = statusMessage.scrollHeight;
+        }
       }
       progressContainer.classList.remove('hidden');
-      if (isFinished) {
+      if(isFinished) {
         statusMessage.classList.add('expanded');
       }
-    }  
+    }
 
     function onIndexDone(data) {
       resetProgressBar();
@@ -863,7 +994,7 @@
 
     function renderIndexedFolders(data) {
       let output = '';
-      if (data.error) {
+      if(data.error) {
         output = data.error + "<br>" + data.errorDetails
       } else {
         allFoldersRes = data.data.map(o => {
@@ -884,7 +1015,7 @@
 
     function deleteIndexForSelectedFolders() {
       //CHECKED
-      if (confirm("Точно удалить индекс по папке?")) {
+      if(confirm("Точно удалить индекс по папке?")) {
         toggleSpinner(true);
         setTimeout(() => {
           const selectedPaths = [...indexedFildersListEl.querySelectorAll('[type="checkbox"]:checked')].map(el => el.value);
@@ -894,23 +1025,21 @@
     }
 
     function clearDB() {
-      if (confirm("Точно удалить ВСЁ?")) {
+      if(confirm("Точно удалить ВСЁ?")) {
         toggleSpinner(true);
         setTimeout(() => {
-          //TO CHECK
           Android.clearDB();
         }, 0);
       }
     }
 
     function reRenderIndexView(data) {
-      //toggleSpinner(false);
       closeProgress.classList.remove('hidden');
       renderIndexedFolders(data);
     }
 
     function updateIndex() {
-      if (confirm("Точно обновить индекс? Индексируются только измененные и новые файлы")) {
+      if(confirm("Точно обновить индекс? Индексируются только измененные и новые файлы")) {
         toggleSpinner(true);
         setTimeout(() => {
           Android.updateIndex()
@@ -920,7 +1049,7 @@
 
     function rebuildIndex() {
       const isConfirmed = confirm("Точно перестроить заново весь индекс?");
-      if (isConfirmed) {
+      if(isConfirmed) {
         toggleSpinner(true);
         setTimeout(() => {
           Android.rebuildIndex()
@@ -933,13 +1062,13 @@
       const current = excerptsContainer.querySelector('.current');
       console.log('front: current excerpt', current);
       let next = null;
-      if (goDown) {
+      if(goDown) {
         next = current ? current.nextElementSibling ? current.nextElementSibling : null : excerptsContainer.querySelector('.excerpt').nextElementSibling;
       } else {
         next = current ? current.previousElementSibling ? current.previousElementSibling : null : null;
       }
       console.log('front: next excerpt', next);
-      if (next) {
+      if(next) {
         next.click();
         excerptsOuter.scrollTop = getInnerElScrollTopToCenterOfOuter(excerptsOuter, next);
       }
@@ -962,7 +1091,7 @@
     }
 
     function containsDisallowedCharacters(str) {
-      const punctuationOrSymbol = /[\p{P}\p{So}ー々〆〤\u3000\u3001\u3002\u300C\u300D\u300E\u300F]/u;
+      const punctuationOrSymbol = /[\p{P}\p{So}〆〤\u3000\u3001\u3002\u300C\u300D\u300E\u300F]/u;
       const emoji = /[\uD83C-\uDBFF][\uDC00-\uDFFF]/;
       const whitespace = /\s/;
       return punctuationOrSymbol.test(str) || emoji.test(str) || whitespace.test(str);
@@ -992,17 +1121,18 @@
 
     function toggleModalView(reference) {
       let el = null;
-      if (typeof reference === 'string') {
+      if(typeof reference === 'string') {
         el = document.querySelector(reference);
-      } else if (reference instanceof HTMLElement) {
+      } else if(reference instanceof HTMLElement) {
         el = reference;
       }
       el.classList.toggle('hidden');
       document.body.style.overflow = el.classList.contains('hidden') ? '' : 'hidden';
+      document.body.classList.toggle('hasModal', !el.classList.contains('hidden'));
     }
 
     document.body.addEventListener('click', (e) => {
-      if (e.target.classList.contains('closeModalButton')) {
+      if(e.target.classList.contains('closeModalButton')) {
         toggleModalView(e.target.closest('.modal'));
       }
     })
@@ -1019,7 +1149,7 @@
         log: function (message) {
           const now = performance.now();
           const elapsed = now - lastTime;
-          if (resetOnLog) lastTime = now;
+          if(resetOnLog) lastTime = now;
           console.log(`[${tag}] ${message} (+${format(elapsed)})`);
         },
         logTotal: function (message) {
@@ -1042,37 +1172,69 @@
 
     const isNight = localStorage.getItem("nightMode") && localStorage.getItem("nightMode") === 'on';
     console.log('front: got nightMode from localStorage: ' + isNight)
-    if (isNight) {
+    if(isNight) {
       document.body.classList.add("night");
     }
 
     function resetProgressBar() {
       progressBarEl.value = 0;
       progressBarEl.classList.add('hidden');
+      progressFileNameEl.textContent = prefix;
+      progressFileNameEl.classList.add('hidden');
+      progressElapsedEl.textContent = prefix;
+      progressElapsedEl.classList.add('hidden');
     }
 
     function toggleSpinner(on) {
-      if(!on) {
+      if(!manageIndex.classList.contains('hidden') && !on) {
+        //if it's index managing spinner
         resetProgressUi();
       }
       spinnerGlobal.classList.toggle('hidden', !on);
     }
 
     function resetProgressUi() {
+      lastTaskLog.innerHTML = statusMessage.innerHTML;
+      lastTaskLog.classList.remove('hidden');
       updateProgressUiEl(progressFileNameEl, null);
       updateProgressUiEl(progressElapsedEl, null);
       closeProgress.classList.add('hidden');
       resetProgressBar();
       statusMessage.innerHTML = '';
       progressContainer.classList.add('hidden');
+      console.log('progress bar was hidden');
       statusMessage.classList.remove('expanded');
       spinnerGlobal.classList.remove('noSpinner');
+    }
+
+    function onSearchProgress(data) {
+      if(data.stage || data.stageElapsed !== undefined) {
+        let output = '';
+        if(data.stage) {
+          output = `<span>${data.stage}</span>`;
+        }
+        if(data.stageElapsed) {
+          output += `<strong>${data.stageElapsed}</strong>`;
+        }
+        if (output) {
+          searchLog.insertAdjacentHTML('beforeend', `<div>${output}</div>`);
+          searchLog.scrollTop = statusMessage.scrollHeight;
+          showSearchLog.classList.remove('hidden');
+        }
+      }
+    }
+
+    function showLog() {
+      toggleModalView(searchLogWrap);
     }
 
     window._onNativeMessage = (res) => {
       const data = JSON.parse(res);
       console.log('front:nativeMessage: ' + res);
-      switch (data.type) {
+      switch(data.type) {
+        case 'search' : 
+          onSearchProgress(data.data);
+          break;
         case "indexFolder":
         case 'updateIndex':
           onIndexDone(data);
