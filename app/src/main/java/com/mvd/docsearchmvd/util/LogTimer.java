@@ -2,7 +2,8 @@ package com.mvd.docsearchmvd.util;
 
 import android.util.Log;
 
-import java.util.Locale;
+import static com.mvd.docsearchmvd.util.Util.formatElapsed;
+import static com.mvd.docsearchmvd.util.Util.formatUnixTime;
 
 public class LogTimer {
     private long startTime;
@@ -26,7 +27,6 @@ public class LogTimer {
     private long getRecord() {
         long now = System.currentTimeMillis();
         long elapsed = now - lastTime;
-        recordCount ++;
         if (resetOnLog) {
             lastTime = now;
         }
@@ -37,50 +37,50 @@ public class LogTimer {
         return formatElapsed(getRecord());
     }
 
-    public void logElapsed(String message) {
-        Log.d(tag, message + " (" + formatElapsed(getRecord()) + ")");
-    }
+//    public void logElapsed(String message) {
+//        Log.d(tag, message + " (" + formatElapsed(getRecord()) + ")");
+//    }
 
     private long getTotal () {
         long now = System.currentTimeMillis();
         return now - startTime;
     }
 
-    public String getTotalElapsed () {
-        return formatElapsed(getTotal());
-    }
+//    public String getTotalElapsed () {
+//        return formatElapsed(getTotal());
+//    }
 
     public void logTotal(String message) {
         Log.d(tag, message + " (TOTAL: " + formatElapsed(getTotal()) + ")");
     }
 
-    private String formatElapsed(long ms) {
-        if (ms < 1000) {
-            return ms + " ms";
-        } else if (ms < 60000) {
-            double seconds = ms / 1000.0;
-            double roundedUp = Math.ceil(seconds * 10) / 10.0;
-            return String.format(Locale.US, "%.1f s", roundedUp);
-        } else {
-            double minutes = ms / 60000.0;
-            double roundedUp = Math.ceil(minutes * 10) / 10.0;
-            return String.format(Locale.US, "%.1f m", roundedUp);
-        }
-    }
-
     public void record(long elapsed) {
         accumulatedElapsed += elapsed;
         recordCount++;
+//        Log.d(WebAppInterface.TAG, "Profiler record \n-recordCount: " + recordCount
+//                + "\n-passed elapsed: " + elapsed
+//                + "\n-accumulatedElapsed: " + accumulatedElapsed);
     }
 
     public String getAverage() {
         if (recordCount == 0) return "n/a";
-        return formatElapsed(getTotal() / recordCount);
+        return formatElapsed(accumulatedElapsed / recordCount);
     }
 
     public void reset() {
         this.startTime = System.currentTimeMillis();
         this.lastTime = this.startTime;
         this.recordCount = 0;
+    }
+
+    public String toString() {
+        return "{\n" +
+            "tag='" + tag +
+            "\nresetOnLog=" + resetOnLog +
+            "\nstartTime=" + formatUnixTime(startTime) +
+            "\nlastTime=" + formatUnixTime(lastTime) +
+            "\nrecordCount=" + recordCount +
+            "\naccumulatedElapsed=" + formatElapsed(accumulatedElapsed) +
+            "\n}";
     }
 }

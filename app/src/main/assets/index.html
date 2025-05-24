@@ -13,8 +13,8 @@
     --button: #ccc;
     --text-accent: #0018a3;
     --text-accent-border: #828aff;
-    --text-accent-bg: #f7e7ee;
-    --text-accent-bg-deep: #dde3ff;
+    --text-accent-bg: #eadbe2;
+    --text-accent-bg-deep: #fff;
     --borderDefault: var(--text-color);
     --borderNeutral: gray;
     --semiBgOverlayed: #f5dae573;
@@ -553,6 +553,7 @@
   #lastTaskLog>div>strong,
   #searchLog>div>strong {
     flex: 0 0 auto;
+    padding-left:5px;
   }
 
   #searchLog {
@@ -1215,7 +1216,6 @@
       searchQueryEl.dispatchEvent(new Event('input'));
       searchQueryEl.blur();
       searchButton.click();
-      searchButton.dispatchEvent(new Event('click'));
     }
 
     function showError(error) {
@@ -1338,7 +1338,7 @@
 
     window._onNativeMessage = (res) => {
       const data = JSON.parse(res);
-      console.log('front:nativeMessage: ' + res);
+      //console.log('front:nativeMessage: ' + res);
       switch(data.type) {
         case 'search':
           onSearchProgress(data.data);

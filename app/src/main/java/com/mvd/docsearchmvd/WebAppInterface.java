@@ -20,6 +20,7 @@ import com.google.gson.Gson;
 import com.mvd.docsearchmvd.model.ApiResponse;
 import com.mvd.docsearchmvd.util.LogTimer;
 import com.mvd.docsearchmvd.util.NativeLogger;
+import com.mvd.docsearchmvd.util.Profiler;
 import com.mvd.docsearchmvd.util.SettingsManager;
 
 import org.json.JSONObject;
@@ -54,11 +55,10 @@ public class WebAppInterface {
     @JavascriptInterface
     public String doSearch(String query) {
         try {
-            NativeLogger.resetLog();
             LogTimer total = new LogTimer(true);
 
             sendResultToJS(webView, new ApiResponse<>("search",
-                    new StatusUpdate("search started " + query)));
+                    new StatusUpdate("Search started " + query)));
 //            NativeLogger.writeResultToFile(new ApiResponse<>("search",
 //                  new StatusUpdate("search started " + query)));
 
@@ -66,16 +66,15 @@ public class WebAppInterface {
 
             DatabaseManager db = ((MainActivity) context).getDbManager();
 
-            db.setProgressCallback((type, payload) -> {
+//            db.setProgressCallback((type, payload) -> {
 //                sendResultToJS(webView, new ApiResponse<>(type, payload));
 //                NativeLogger.writeResultToFile(new ApiResponse<>(type, payload));
-            });
+//            });
 
             SearchEngine se = new SearchEngine(db);
 
             se.setProgressCallback((type, payload) -> {
-//                sendResultToJS(webView, new ApiResponse<>(type, payload));
-//                NativeLogger.writeResultToFile(new ApiResponse<>(type, payload));
+                sendResultToJS(webView, new ApiResponse<>(type, payload));
             });
 
             List<Hit> results = se.search(query);
@@ -84,8 +83,6 @@ public class WebAppInterface {
 
             sendResultToJS(webView, new ApiResponse<>("search",
                     new StatusUpdate("search finished", total.getElapsed())));
-//            NativeLogger.writeResultToFile(new ApiResponse<>("search",
-//                    new StatusUpdate("search finished", total.getElapsed())));
 
             return gson.toJson(new ApiResponse<List<Hit>>(results));
         } catch (Exception e) {
@@ -143,12 +140,28 @@ public class WebAppInterface {
                 for (String path : paths) {
                     LogTimer fileIndexDeleteTimer = new LogTimer(false);
                     db.deleteIndexForPath(path);
-                    db.deleteOrphanTerms();
-                    sendResultToJS(webView, new ApiResponse<>("statusUpdate", new StatusUpdate("Deleted for path " + path, fileIndexDeleteTimer.getElapsed())));
+                    sendResultToJS(webView, new ApiResponse<>("statusUpdate", new StatusUpdate("Deleted for path "
+                            + path, fileIndexDeleteTimer.getElapsed())));
                 }
+                LogTimer orphans = new LogTimer(true);
+
+                db.deleteOrphanTerms();
+
+                String orphansS = "<br>- deleting orphan terms: " + orphans.getElapsed();
                 db.getConnection().setTransactionSuccessful();
                 success = true;
-                Log.d(WebAppInterface.TAG, "deleting indexes finished, returning folders...");
+
+                String message = "Deleting summary:";
+                for(String metric : stats.keySet()) {
+                    message += "<br>- " + metric + ": " + stats.get(metric);
+                }
+                message += "<br>- avg TOTAL root delete time: " + Profiler.get("deleting").getAverage()
+                        + "<br>- avg FILES del time: " + Profiler.get("files").getAverage()
+                        + "<br>- avg FOLDERS del time: " + Profiler.get("folders").getAverage()
+                        + orphansS;
+                Profiler.clear();
+                sendResultToJS(webView, new ApiResponse<>("statusUpdate", new StatusUpdate(message)));
+
             } catch (Exception e) {
                 sendResultToJS(webView, new ApiResponse<>("deleteIndexesForPaths",
                         "Ошибка при удалении индекса папкам",
@@ -269,8 +282,10 @@ public class WebAppInterface {
                 return;
             }
             DatabaseManager db = ((MainActivity) context).getDbManager();
+            db.setProgressCallback((type, payload) -> {
+                sendResultToJS(webView, new ApiResponse<>(type, payload));
+            });
             FileIndexer fileIndexer = new FileIndexer(db, context, settingsManager);
-
             fileIndexer.setProgressCallback((type, payload) -> {
                 sendResultToJS(webView, new ApiResponse<>(type, payload));
             });
@@ -306,7 +321,6 @@ public class WebAppInterface {
     @JavascriptInterface
     public void rebuildIndex(String jsonArrayString) {
         try {
-            Log.d(WebAppInterface.TAG, "Deleting indexes before rebuilding index");
             sendResultToJS(webView, new ApiResponse<>("statusUpdate",
                     new StatusUpdate("rebuildIndex started")));
             DatabaseManager db = ((MainActivity) context).getDbManager();
@@ -315,44 +329,41 @@ public class WebAppInterface {
             fileIndexer.setProgressCallback((type, payload) -> {
                 sendResultToJS(webView, new ApiResponse<>(type, payload));
             });
+            db.setProgressCallback((type, payload) -> {
+                sendResultToJS(webView, new ApiResponse<>(type, payload));
+            });
 
             List<String> rawRoots = gson.fromJson(jsonArrayString, new TypeToken<List<String>>(){}.getType());
             List<String> roots = rawRoots.isEmpty() ? db.getAllIndexedFolders() : rawRoots;
 
             new Thread(() -> {
                 LogTimer totalTimer = new LogTimer(true);
-                sendResultToJS(webView, new ApiResponse<>("statusUpdate",
-                        new StatusUpdate("Rebuilding index...")));
 
                 File[] folders = roots.stream()
                         .map(File::new)
                         .toArray(File[]::new);
                 boolean success = false;
                 try {
+                    sendResultToJS(webView, new ApiResponse<>("statusUpdate",
+                            new StatusUpdate("\uD83D\uDD01 Rebuilding started (" + roots.size() + " root folders)")));
                     db.getConnection().beginTransaction();
 
                     LogTimer clearTablesTimer = new LogTimer(true);
 
                     sendResultToJS(webView, new ApiResponse<>("statusUpdate",
                             new StatusUpdate("Clearing tables...")));
+                    Log.d(WebAppInterface.TAG, "Deleting indexes before rebuilding index");
 
                     db.clearTables(true);
 
                     sendResultToJS(webView, new ApiResponse<>("statusUpdate",
                             new StatusUpdate("Tables cleared", clearTablesTimer.getElapsed())));
 
-                    LogTimer indexingTotal = new LogTimer(true);
-
-                    sendResultToJS(webView, new ApiResponse<>("statusUpdate",
-                            new StatusUpdate("Updating index...")));
-
                     fileIndexer.updateIndex(folders);
 
                     db.getConnection().setTransactionSuccessful();
                     success = true;
 
-                    sendResultToJS(webView, new ApiResponse<>("statusUpdate",
-                            new StatusUpdate("Updating index finished", indexingTotal.getElapsed())));
                 } catch (IOException | SQLException e) {
                     sendResultToJS(webView, new ApiResponse<>("rebuildIndex",
                             "rebuildIndex error",

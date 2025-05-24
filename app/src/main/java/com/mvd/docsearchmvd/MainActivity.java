@@ -196,7 +196,6 @@ public class MainActivity extends AppCompatActivity {
         if (requestCode == 101) {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
                 if (Environment.isExternalStorageManager()) {
-                    Log.d(WebAppInterface.TAG, "!!!setupWebView");
                     setupWebView();
                 } else {
                     Toast.makeText(this, "Требуется доступ ко всем файлам", Toast.LENGTH_LONG).show();
@@ -221,8 +220,7 @@ public class MainActivity extends AppCompatActivity {
 
             if (allGranted) {
                 Log.d(WebAppInterface.TAG, "the permission granted");
-                Log.d(WebAppInterface.TAG, "!!!setupWebView");
-                setupWebView(); // Всё хорошо, продолжаем
+                setupWebView();
             } else {
                 Log.d(WebAppInterface.TAG, "the permission missing");
                 Toast.makeText(this, "Необходимо разрешение для работы приложения", Toast.LENGTH_LONG).show();

@@ -11,9 +11,12 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.regex.Pattern;
 
+import com.mvd.docsearchmvd.WebAppInterface;
 import com.mvd.docsearchmvd.model.Token;
 import com.mvd.docsearchmvd.util.Profiler;
 import com.mvd.docsearchmvd.util.Util;
+
+import android.util.Log;
 
 public class Tokenizer {
 
@@ -24,6 +27,7 @@ public class Tokenizer {
     }
 
     public List<Token> tokenize(String text) {
+        Log.d(WebAppInterface.TAG, "Start tokenize method");
         long timerStart = System.currentTimeMillis();
         Map<String, IntList> tokenMap = new LinkedHashMap<>();
 
@@ -65,18 +69,12 @@ public class Tokenizer {
 
         List<Token> tokens = new ArrayList<>(tokenMap.size());
         for (Map.Entry<String, IntList> entry : tokenMap.entrySet()) {
-            String token = entry.getKey();
             IntList positions = entry.getValue();
+            if (positions.size() == 0) continue;
             positions.sort();
-
-//            StringBuilder sb = new StringBuilder();
-//            for (int i = 0; i < positions.size(); i++) {
-//                if (i > 0) sb.append(',');
-//                sb.append(positions.get(i));
-//            }
-
-//            tokens.add(new Token(token, sb.toString(), toDeltaVarIntBlob(positions)));
-            tokens.add(new Token(token, toDeltaVarIntBlob(positions)));
+            byte[] blob = toDeltaVarIntBlob(positions);
+            if (blob.length == 0) continue; // Исключаем токены с пустым positionsBlob
+            tokens.add(new Token(entry.getKey(), blob));
         }
         Profiler.get("tokenize").record(System.currentTimeMillis() - timerStart);
         return tokens;

@@ -68,30 +68,38 @@ public class FileIndexer {
 
     private void indexFile(File file, String content) {
         Log.d(WebAppInterface.TAG, "indexFile " + file.getName());
-
         int fileId;
         fileId = db.getFileId(file.getAbsolutePath());
+
+        long clearTokensStarted = System.currentTimeMillis();
+
+        SQLiteStatement delStmt = conn.compileStatement("DELETE FROM tokens WHERE file_id = ?");
+        delStmt.bindLong(1, fileId);
+        delStmt.executeUpdateDelete();
+        delStmt.close();
+
+        Profiler.get("clearTokens").record(System.currentTimeMillis() - clearTokensStarted);
+
         Log.d(WebAppInterface.TAG, "tokenize and insert: " + file.getName());
-        LogTimer getTokens = new LogTimer(true);
-        if (progressCallback != null) {
-            progressCallback.accept("statusUpdate", new StatusUpdate("tokenizing file [" + file.getName() + "] started..."));
-        }
+//        LogTimer getTokens = new LogTimer(true);
+//        if (progressCallback != null) {
+//            progressCallback.accept("statusUpdate", new StatusUpdate("tokenizing file [" + file.getName() + "] started..."));
+//        }
 
         List<Token> tokens = tokenizer.tokenize(content);
 
-        if (progressCallback != null) {
-            progressCallback.accept("statusUpdate",
-                new StatusUpdate(
-            "tokenizing [" + file.getName() + "] finished (" + tokens.size() + " tokens)",
-                  getTokens.getElapsed()));
-        }
+//        if (progressCallback != null) {
+//            progressCallback.accept("statusUpdate",
+//                new StatusUpdate(
+//            "tokenizing [" + file.getName() + "] finished (" + tokens.size() + " tokens)",
+//                  getTokens.getElapsed()));
+//        }
 
 //        LogTimer tokensInsertTT = new LogTimer(true);
 //        if (progressCallback != null) {
 //            progressCallback.accept("statusUpdate", new StatusUpdate("inserting tokens [" + file.getName() + "] started..."));
 //        }
 
-//        String sql = "INSERT INTO tokens (token_id, file_id, positions, positions_blob) VALUES (?, ?, ?, ?)";
         String sql = "INSERT INTO tokens (token_id, file_id, positions_blob) VALUES (?, ?, ?)";
         SQLiteStatement stmt = conn.compileStatement(sql);
 
@@ -101,7 +109,6 @@ public class FileIndexer {
                 stmt.clearBindings();
                 stmt.bindLong(1, tokenId);
                 stmt.bindLong(2, fileId);
-//                stmt.bindString(3, token.positions);
                 stmt.bindBlob(3, token.positionsBlob.length > 0 ? token.positionsBlob : new byte[0]);
                 stmt.executeInsert();
             } catch (Exception e) {
@@ -197,12 +204,14 @@ public class FileIndexer {
         for(String metric : stats.keySet()) {
             message += "<br>- " + metric + ": " + stats.get(metric);
         }
+        Log.d(WebAppInterface.TAG, "Profiler: " + Profiler.getTimers());
         message += "<br>- avg metadata time: " + Profiler.get("metadata").getAverage()
-                + "<br>- avg content reading time " + Profiler.get("content").getAverage()
-                + "<br>- avg tokenize time " + Profiler.get("tokenize").getAverage()
+                + "<br>- avg content reading time: " + Profiler.get("content").getAverage()
+                + "<br>- avg tokenize time: " + Profiler.get("tokenize").getAverage()
+                + "<br>- avg clear prev tokens time: " + Profiler.get("clearTokens").getAverage()
                 + orphansS;
 
-
+        Profiler.clear();
         if (progressCallback != null) {
             progressCallback.accept("statusUpdate", new StatusUpdate(message));
         }
