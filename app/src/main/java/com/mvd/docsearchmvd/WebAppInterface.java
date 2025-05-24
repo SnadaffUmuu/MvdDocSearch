@@ -35,6 +35,7 @@ import java.io.PrintWriter;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.sql.SQLException;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -123,12 +124,17 @@ public class WebAppInterface {
         new Thread(() -> {
             Log.d(WebAppInterface.TAG, "deleting indexes for paths: " + jsonArrayString);
             sendResultToJS(webView, new ApiResponse<>("statusUpdate",
-                    new StatusUpdate("deleteIndexesForPaths started")));
+                    new StatusUpdate("deleteIndexesForPaths started (" + paths.size() + " папок)")));
             LogTimer timer = new LogTimer(false);
             DatabaseManager db = ((MainActivity) context).getDbManager();
 
             db.setProgressCallback((type, payload) -> {
                 sendResultToJS(webView, new ApiResponse<>(type, payload));
+            });
+
+            Map<String, Integer> stats = new HashMap<>();
+            db.setStatCallback((type, num) -> {
+                stats.merge(type, (Integer) num, Integer::sum);
             });
 
             db.getConnection().beginTransaction();
@@ -137,6 +143,7 @@ public class WebAppInterface {
                 for (String path : paths) {
                     LogTimer fileIndexDeleteTimer = new LogTimer(false);
                     db.deleteIndexForPath(path);
+                    db.deleteOrphanTerms();
                     sendResultToJS(webView, new ApiResponse<>("statusUpdate", new StatusUpdate("Deleted for path " + path, fileIndexDeleteTimer.getElapsed())));
                 }
                 db.getConnection().setTransactionSuccessful();
@@ -201,9 +208,6 @@ public class WebAppInterface {
             DatabaseManager db = ((MainActivity) context).getDbManager();
             FileIndexer fileIndexer = new FileIndexer(db, context, settingsManager);
 
-            sendResultToJS(webView, new ApiResponse<>("statusUpdate",
-                    new StatusUpdate("updateIndex started")));
-
             fileIndexer.setProgressCallback((type, payload) -> {
                 sendResultToJS(webView, new ApiResponse<>(type, payload));
             });
@@ -211,24 +215,21 @@ public class WebAppInterface {
                 sendResultToJS(webView, new ApiResponse<>(type, payload));
             });
 
-            LogTimer getAllFoldersTimer = new LogTimer(true);
-
             List<String> rawRoots = gson.fromJson(jsonArrayString, new TypeToken<List<String>>(){}.getType());
             List<String> roots = rawRoots.isEmpty() ? db.getAllIndexedFolders() : rawRoots;
 
-            sendResultToJS(webView, new ApiResponse<>("statusUpdate",
-                    new StatusUpdate("get all indexed folders",
-                            getAllFoldersTimer.getElapsed()))
-            );
             new Thread(() -> {
-                File[] folders = roots.stream()
+                File[] rootPathsFromClient = roots.stream()
                     .map(File::new)
                     .toArray(File[]::new);
                 boolean success = false;
+                LogTimer updateIndexTotal = new LogTimer(true);
                 try {
+                    sendResultToJS(webView, new ApiResponse<>("statusUpdate",
+                            new StatusUpdate("\uD83D\uDD01 Reindex started (" + roots.size() + " root folders)")));
                     db.getConnection().beginTransaction();
 
-                    fileIndexer.updateIndex(folders);
+                    fileIndexer.updateIndex(rootPathsFromClient);
 
                     db.getConnection().setTransactionSuccessful();
                     success = true;
@@ -240,7 +241,7 @@ public class WebAppInterface {
                 }
                 if (success) {
                     sendResultToJS(webView, new ApiResponse<>("statusFinish",
-                            new StatusUpdate("updateIndex"))
+                            new StatusUpdate("✅ Reindex completed", updateIndexTotal.getElapsed()))
                     );
                     sendResultToJS(webView, new ApiResponse<>("updateIndex", db.getAllFolders()));
                 }

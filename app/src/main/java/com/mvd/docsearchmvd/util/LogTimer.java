@@ -9,6 +9,8 @@ public class LogTimer {
     private long lastTime;
     private final String tag;
     private final boolean resetOnLog;
+    private int recordCount = 0;
+    private long accumulatedElapsed = 0;
 
     public LogTimer(String tag, boolean resetOnLog) {
         this.tag = tag;
@@ -18,15 +20,13 @@ public class LogTimer {
     }
 
     public LogTimer(boolean resetOnLog) {
-        this.tag = "LogTimer";
-        this.resetOnLog = resetOnLog;
-        this.startTime = System.currentTimeMillis();
-        this.lastTime = startTime;
+        this("LogTimer", resetOnLog);
     }
 
     private long getRecord() {
         long now = System.currentTimeMillis();
         long elapsed = now - lastTime;
+        recordCount ++;
         if (resetOnLog) {
             lastTime = now;
         }
@@ -68,8 +68,19 @@ public class LogTimer {
         }
     }
 
+    public void record(long elapsed) {
+        accumulatedElapsed += elapsed;
+        recordCount++;
+    }
+
+    public String getAverage() {
+        if (recordCount == 0) return "n/a";
+        return formatElapsed(getTotal() / recordCount);
+    }
+
     public void reset() {
         this.startTime = System.currentTimeMillis();
         this.lastTime = this.startTime;
+        this.recordCount = 0;
     }
 }

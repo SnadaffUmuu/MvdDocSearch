@@ -1,5 +1,7 @@
 package com.mvd.docsearchmvd.indexer;
 
+import static com.mvd.docsearchmvd.util.Util.sendResultToJS;
+
 import android.content.Context;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteStatement;
@@ -8,11 +10,13 @@ import android.util.Log;
 import com.mvd.docsearchmvd.WebAppInterface;
 import com.mvd.docsearchmvd.db.DatabaseManager;
 import com.mvd.docsearchmvd.db.TokenDictionary;
+import com.mvd.docsearchmvd.model.FileEntry;
 import com.mvd.docsearchmvd.model.StatusUpdate;
 import com.mvd.docsearchmvd.model.Token;
 import com.mvd.docsearchmvd.model.ProgressUpdate;
 import com.mvd.docsearchmvd.util.LogTimer;
 import com.mvd.docsearchmvd.util.SettingsManager;
+import com.mvd.docsearchmvd.util.Profiler;
 
 import java.io.*;
 import java.sql.*;
@@ -82,10 +86,10 @@ public class FileIndexer {
                   getTokens.getElapsed()));
         }
 
-        LogTimer tokensInsertTT = new LogTimer(true);
-        if (progressCallback != null) {
-            progressCallback.accept("statusUpdate", new StatusUpdate("inserting tokens [" + file.getName() + "] started..."));
-        }
+//        LogTimer tokensInsertTT = new LogTimer(true);
+//        if (progressCallback != null) {
+//            progressCallback.accept("statusUpdate", new StatusUpdate("inserting tokens [" + file.getName() + "] started..."));
+//        }
 
 //        String sql = "INSERT INTO tokens (token_id, file_id, positions, positions_blob) VALUES (?, ?, ?, ?)";
         String sql = "INSERT INTO tokens (token_id, file_id, positions_blob) VALUES (?, ?, ?)";
@@ -107,20 +111,23 @@ public class FileIndexer {
 
         stmt.close();
 
-        if (progressCallback != null) {
-            progressCallback.accept("statusUpdate", new StatusUpdate("inserting tokens [" + file.getName() + "] finished", tokensInsertTT.getElapsed()));
-        }
+//        if (progressCallback != null) {
+//            progressCallback.accept("statusUpdate", new StatusUpdate("inserting tokens [" + file.getName() + "] finished", tokensInsertTT.getElapsed()));
+//        }
         Log.d(WebAppInterface.TAG, "[" + file.getName() + "] tokens inserted");
     }
 
-    public void indexFileIfNeeded(File file) throws SQLException, IOException {
+    public void indexFileIfNeeded(FileEntry entry) throws SQLException, IOException {
         Log.d(WebAppInterface.TAG, "indexFileIfNeeded");
 
-        String content = db.updateFileMetadata(file);
+        db.setProgressCallback((type, data) -> {
+
+        });
+        String content = db.updateFileMetadata(entry);
 
         Log.d(WebAppInterface.TAG, "file content received");
         if (content != null) {
-            indexFile(file, content);
+            indexFile(entry.file, content);
         }
     }
 
@@ -147,99 +154,93 @@ public class FileIndexer {
     }
      */
 
-    public void updateIndex(File[] folders) throws IOException, SQLException {
-        Log.d(WebAppInterface.TAG, "updateIndex");
-        LogTimer updateIndexInnerTotal = new LogTimer(true);
+    public void updateIndex(File[] rootPathsFromClient) throws IOException, SQLException {
+        LogTimer collecting = new LogTimer(true);
+        List<FileEntry> allResources = collectAllResources(rootPathsFromClient);
         if (progressCallback != null) {
-            progressCallback.accept("statusUpdate", new StatusUpdate("updateIndexInner started..."));
+            progressCallback.accept("statusUpdate", new StatusUpdate("→ Collected resources (" + allResources.size() + ")", collecting.getElapsed()));
         }
 
-        LogTimer collectFilesTimer = new LogTimer(false);
-        if (progressCallback != null) {
-            progressCallback.accept("statusUpdate", new StatusUpdate("collecting files started..."));
-        }
+        Map<String, Integer> stats = new HashMap<>();
 
-        List<File> allResources = collectAllResources(folders);
-
-        Set<String> actualPaths = allResources.stream()
-                .map(File::getAbsolutePath)
+        db.setStatCallback((type, num) -> {
+            stats.merge(type, (Integer) num, Integer::sum);
+        });
+        
+        Set<String> pathsOfExistingResources = allResources.stream()
+                .map(FileEntry::getPath)
                 .collect(Collectors.toSet());
 
-        if (progressCallback != null) {
-            progressCallback.accept("statusUpdate", new StatusUpdate("collecting files finished", collectFilesTimer.getElapsed()));
-        }
-
-        LogTimer deleteFilesTimer = new LogTimer(false);
-        if (progressCallback != null) {
-            progressCallback.accept("statusUpdate", new StatusUpdate("deleting missing files from db..."));
-        }
-
-        db.deleteMissingFilesFromDb(actualPaths, folders);
-
-        if (progressCallback != null) {
-            progressCallback.accept("statusUpdate", new StatusUpdate("deleting missing files finished", deleteFilesTimer.getElapsed()));
-        }
+        db.deleteMissingFilesFromDb(pathsOfExistingResources, rootPathsFromClient);
 
         filesDone = 0;
         startTime = System.currentTimeMillis();
         totalFiles = allResources.size();
         Log.d(WebAppInterface.TAG, "allResources size: " + totalFiles);
-        for (File resource : allResources) {
-            Log.d(WebAppInterface.TAG, resource.getAbsolutePath());
+        for (FileEntry resource : allResources) {
+            Log.d(WebAppInterface.TAG, resource.getPath());
 
             indexFileIfNeeded(resource);
 
             filesDone++;
             long elapsed = (System.currentTimeMillis() - startTime) / 1000;
             if (progressCallback != null) {
-                progressCallback.accept("indexProgress", new ProgressUpdate(resource.getName(), filesDone, totalFiles, elapsed));
+                progressCallback.accept("indexProgress", new ProgressUpdate(resource.file.getName(), filesDone, totalFiles, elapsed));
             }
         }
+
+        LogTimer orphans = new LogTimer(true);
+        db.deleteOrphanTerms();
+        String orphansS = "<br>- deleting terms: " + orphans.getElapsed();
+
+        String message = "Indexing summary:";
+        for(String metric : stats.keySet()) {
+            message += "<br>- " + metric + ": " + stats.get(metric);
+        }
+        message += "<br>- avg metadata time: " + Profiler.get("metadata").getAverage()
+                + "<br>- avg content reading time " + Profiler.get("content").getAverage()
+                + "<br>- avg tokenize time " + Profiler.get("tokenize").getAverage()
+                + orphansS;
+
+
         if (progressCallback != null) {
-            progressCallback.accept("statusUpdate", new StatusUpdate("updateIndexInner finished", updateIndexInnerTotal.getElapsed()));
+            progressCallback.accept("statusUpdate", new StatusUpdate(message));
         }
     }
 
-    private List<File> collectAllResources(File[] roots) {
-        List<File> result = new ArrayList<>();
+    private List<FileEntry> collectAllResources(File[] roots) {
+        List<FileEntry> result = new ArrayList<>();
         Log.d(WebAppInterface.TAG, "collectAllResources called");
-
+//        LogTimer filesystemScan = new LogTimer(true);
+//        LogTimer deleting = new LogTimer(false);
         for (File root : roots) {
             Log.d(WebAppInterface.TAG, "root folder:" + root.getAbsolutePath());
-
             if (db.rootExists(root) && (root == null || !root.exists())) {
                 Log.d(WebAppInterface.TAG, "root folder:" + root.getAbsolutePath() + " есть в базе, но нет на диске, удаляем из базы");
-
+//                long start = System.currentTimeMillis();
                 db.deleteIndexForPath(root.getAbsolutePath());
-
+//                deleting.record(System.currentTimeMillis() - start);
             } else if (!db.rootExists(root)) {
                 Log.d(WebAppInterface.TAG, "root folder:" + root.getAbsolutePath() + " нет в базе, но есть на диске, добавляет в бд");
                 Log.d(WebAppInterface.TAG, "folder doesn't exists in db yet, inserting");
-
                 db.insertIndexedFolder(root);
-
                 walk(root, result);
-
             } else {
                 Log.d(WebAppInterface.TAG, "folder already exists in indexed_folders");
-
                 walk(root, result);
             }
         }
         return result;
     }
 
-    private void walk(File file, List<File> result) {
+    private void walk(File file, List<FileEntry> result) {
         if (file.isDirectory() && !toExclude(file)) {
-            Log.d(WebAppInterface.TAG, "file is folder:" + file.getAbsolutePath());
             File[] files = file.listFiles();
-            Log.d(WebAppInterface.TAG, "the folder contains files: " + files.length);
             if (files != null) {
                 for (File f : files) walk(f, result);
             }
         } else if (file.isFile() && file.canRead() && !toExclude(file) && isAllowedExtension(file)) {
-            Log.d(WebAppInterface.TAG, "adding file: " + file.getAbsolutePath());
-            result.add(file);
+            result.add(new FileEntry(file));
         }
     }
 }

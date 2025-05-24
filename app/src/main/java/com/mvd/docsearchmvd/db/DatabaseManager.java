@@ -9,8 +9,10 @@ import android.database.sqlite.SQLiteStatement;
 import android.util.Log;
 
 import com.mvd.docsearchmvd.WebAppInterface;
+import com.mvd.docsearchmvd.model.FileEntry;
 import com.mvd.docsearchmvd.model.StatusUpdate;
 import com.mvd.docsearchmvd.util.LogTimer;
+import com.mvd.docsearchmvd.util.Profiler;
 
 import java.io.File;
 import java.io.IOException;
@@ -31,6 +33,13 @@ public class DatabaseManager {
     public void setProgressCallback(BiConsumer<String, Object> callback) {
         this.progressCallback = callback;
     }
+
+    private BiConsumer<String, Object> statCallback;
+
+    public void setStatCallback(BiConsumer<String, Object> callback) {
+        this.statCallback = callback;
+    }
+
     public DatabaseManager(Context context) {
         this.context = context;
         String dbPath = context.getFilesDir().getAbsolutePath() + "/index.db";
@@ -57,7 +66,6 @@ public class DatabaseManager {
             db.execSQL("CREATE TABLE IF NOT EXISTS tokens(" +
                     "token_id INTEGER, " +
                     "file_id INTEGER NOT NULL, " +
-//                    "positions TEXT , " +
                     "positions_blob BLOB NOT NULL, " +
                     "FOREIGN KEY(file_id) REFERENCES files(id) ON DELETE CASCADE, " +
                     "FOREIGN KEY(token_id) REFERENCES dict(id));");
@@ -74,11 +82,10 @@ public class DatabaseManager {
 //            db.execSQL("CREATE INDEX IF NOT EXISTS idx_tokens_token_id " +
 //                    "ON tokens(token_id)");
 
-            db.execSQL("CREATE INDEX IF NOT EXISTS idx_tokens_token_id_file_id_positions " +
+            db.execSQL("CREATE INDEX IF NOT EXISTS idx_tokens_token_id_file_id " +
                     "ON tokens(" +
                     "token_id, " +
-                    "file_id, " +
-                    "positions" +
+                    "file_id " +
                     ");");
 
             db.execSQL("CREATE INDEX IF NOT EXISTS idx_tokens_file_id " +
@@ -157,18 +164,19 @@ public class DatabaseManager {
         }
     }
 
-    public String updateFileMetadata(File file) throws IOException {
+    public String updateFileMetadata(FileEntry entry) throws IOException {
+        long start = System.currentTimeMillis();
         Log.d(WebAppInterface.TAG, "updateFileMetadata");
 
-        LogTimer updateMetadataTotal = new LogTimer(true);
+//        LogTimer updateMetadataTotal = new LogTimer(true);
 
         if (progressCallback != null) {
-            progressCallback.accept("statusUpdate", new StatusUpdate("Updating metadata (" + file.getName() + ")..."));
+            progressCallback.accept("statusUpdate", new StatusUpdate("Updating metadata (" + entry.file.getName() + ")..."));
         }
 
-        String filePath = file.getAbsolutePath();
-        long fileSize = file.length();
-        long lastModified = file.lastModified();
+        String filePath = entry.getPath();
+        long fileSize = entry.size;
+        long lastModified = entry.lastModified;
         Cursor cursor = db.rawQuery("SELECT size, last_modified FROM files WHERE path = ?", new String[]{filePath});
 
         try {
@@ -187,14 +195,28 @@ public class DatabaseManager {
                     stmt.bindString(3, filePath);
                     stmt.executeUpdateDelete();
 //                    Log.d(WebAppInterface.TAG, "[INFO] Обновление файла: " + filePath);
-                    if (progressCallback != null) {
-                        progressCallback.accept("statusUpdate", new StatusUpdate("Updating metadata finished: bd updated", updateMetadataTotal.getElapsed()));
+//                    if (progressCallback != null) {
+//                        progressCallback.accept("statusUpdate", new StatusUpdate("Updating metadata finished: bd updated", updateMetadataTotal.getElapsed()));
+//                    }
+//                    if (progressCallback != null) {
+//                        progressCallback.accept("statusUpdate", new StatusUpdate("inserting tokens [" + file.getName() + "] finished", tokensInsertTT.getElapsed()));
+//                    }
+                    if (statCallback != null) {
+                        statCallback.accept("updated", 1);
                     }
-                    return new String(Files.readAllBytes(file.toPath()), StandardCharsets.UTF_8);
+                    Profiler.get("metadata").record(System.currentTimeMillis() - start);
+                    long contentStart = System.currentTimeMillis();
+                    String content = new String(Files.readAllBytes(entry.file.toPath()), StandardCharsets.UTF_8);
+                    Profiler.get("content").record(System.currentTimeMillis() - contentStart);
+                    return content;
                 } else {
-                    if (progressCallback != null) {
-                        progressCallback.accept("statusUpdate", new StatusUpdate("Updating metadata finished: unchanged", updateMetadataTotal.getElapsed()));
+//                    if (progressCallback != null) {
+//                        progressCallback.accept("statusUpdate", new StatusUpdate("Updating metadata finished: unchanged", updateMetadataTotal.getElapsed()));
+//                    }
+                    if (statCallback != null) {
+                        statCallback.accept("unchanged", 1);
                     }
+                    Profiler.get("metadata").record(System.currentTimeMillis() - start);
                     return null;
                 }
             } else {
@@ -208,10 +230,17 @@ public class DatabaseManager {
 
 //                Log.d(WebAppInterface.TAG, "[INFO] Новый файл: " + filePath);
 //                Log.d(WebAppInterface.TAG, "Try to read the content now...");
-                if (progressCallback != null) {
-                    progressCallback.accept("statusUpdate", new StatusUpdate("Updating metadata finished: new file added", updateMetadataTotal.getElapsed()));
+//                if (progressCallback != null) {
+//                    progressCallback.accept("statusUpdate", new StatusUpdate("Updating metadata finished: new file added", updateMetadataTotal.getElapsed()));
+//                }
+                if (statCallback != null) {
+                    statCallback.accept("added", 1);
                 }
-                return new String(Files.readAllBytes(file.toPath()), StandardCharsets.UTF_8);
+                Profiler.get("metadata").record(System.currentTimeMillis() - start);
+                long contentStart = System.currentTimeMillis();
+                String content = new String(Files.readAllBytes(entry.file.toPath()), StandardCharsets.UTF_8);
+                Profiler.get("content").record(System.currentTimeMillis() - contentStart);
+                return content;
             }
         } finally {
             cursor.close();
@@ -360,6 +389,7 @@ public class DatabaseManager {
 
     public void deleteIndexForPath (String prefix) {
         Log.d(WebAppInterface.TAG, "deleteIndexForPath called for folder: " + prefix);
+        long startDeleting = System.currentTimeMillis();
         String safePrefix = prefix
                 .replace("\\", "\\\\")
                 .replace("%", "\\%")
@@ -369,53 +399,52 @@ public class DatabaseManager {
 
         Cursor cursor = null;
         try {
-            cursor = db.rawQuery(
-                    "SELECT COUNT(*) FROM files WHERE path LIKE ? ESCAPE '\\'",
-                    new String[]{likeArg}
-            );
-            if (cursor.moveToFirst()) {
-                int count = cursor.getInt(0);
-                Log.d(WebAppInterface.TAG, "Найдено для удаления из files: " + count + " записей");
-            }
-            LogTimer dbDeleteFilesTimer = new LogTimer(false);
+//            LogTimer dbDeleteFilesTimer = new LogTimer(false);
             int deletedFiles = db.delete(
                     "files",
                     "path LIKE ? ESCAPE '\\'",
                     new String[]{likeArg}
             );
+            if (statCallback != null) {
+                statCallback.accept("deleted records", deletedFiles);
+            }
             Log.d(WebAppInterface.TAG, "Удалено из files: " + deletedFiles + " строк");
-            if (progressCallback != null) {
-                progressCallback.accept("statusUpdate", new StatusUpdate("from files table", dbDeleteFilesTimer.getElapsed()));
-            }
+//            if (progressCallback != null) {
+//                progressCallback.accept("statusUpdate", new StatusUpdate("from files table", dbDeleteFilesTimer.getElapsed()));
+//            }
 
-            LogTimer dbDeleteTokensTimer = new LogTimer(false);
-            // Удаление неиспользуемых токенов
-            Log.d(WebAppInterface.TAG, "Удаляем неиспользуемые токены из dict...");
-            db.execSQL("DELETE FROM dict " +
-                    "WHERE NOT EXISTS (" +
-                    "    SELECT 1 FROM tokens " +
-                    "    WHERE tokens.token_id = dict.id" +
-                    ")");
-            if (progressCallback != null) {
-                progressCallback.accept("statusUpdate", new StatusUpdate("from dict table", dbDeleteTokensTimer.getElapsed()));
-            }
-            LogTimer dbDeleteIndexedFoldersTimer = new LogTimer(false);
+//            LogTimer dbDeleteIndexedFoldersTimer = new LogTimer(false);
             int deletedFolders = db.delete(
                     "indexed_folders",
                     "path = ?",
                     new String[]{prefix}
             );
-            if (progressCallback != null) {
-                progressCallback.accept("statusUpdate", new StatusUpdate("from indexed_folders", dbDeleteIndexedFoldersTimer.getElapsed()));
-            }
+//            if (progressCallback != null) {
+//                progressCallback.accept("statusUpdate", new StatusUpdate("from indexed_folders", dbDeleteIndexedFoldersTimer.getElapsed()));
+//            }
             Log.d(WebAppInterface.TAG, "Удалено из indexed_folders: " + deletedFolders + " строк");
+            Profiler.get("deleting").record(System.currentTimeMillis() - startDeleting);
         } finally {
             if (cursor != null) cursor.close();
         }
     }
 
-    public void deleteMissingFilesFromDb(Set<String> diskFilePaths, File[] roots) {
-        for (File root : roots) {
+    public void deleteOrphanTerms() {
+        int deleted = db.compileStatement(
+                "DELETE FROM dict WHERE id NOT IN (SELECT DISTINCT token_id FROM tokens)"
+        ).executeUpdateDelete();
+        if (statCallback != null) {
+            statCallback.accept("deletedTerms", deleted);
+        }
+    }
+
+    public void deleteMissingFilesFromDb(Set<String> pathsOfExistingResources, File[] rootPathsFromClient) {
+        LogTimer delMissing = new LogTimer(true);
+        if (progressCallback != null) {
+            progressCallback.accept("statusUpdate", new StatusUpdate("→ Deleting missing files..."));
+        }
+        int deleted = 0;
+        for (File root : rootPathsFromClient) {
             String prefix = root.getAbsolutePath();
             String safePrefix = prefix
                     .replace("\\", "\\\\")
@@ -433,7 +462,7 @@ public class DatabaseManager {
                 List<String> toDelete = new ArrayList<>();
                 while (cursor.moveToNext()) {
                     String pathInDb = cursor.getString(0);
-                    if (!diskFilePaths.contains(pathInDb)) {
+                    if (!pathsOfExistingResources.contains(pathInDb)) {
                         toDelete.add(pathInDb);
                     }
                 }
@@ -441,14 +470,15 @@ public class DatabaseManager {
 
                 for (String path : toDelete) {
                     db.delete("files", "path = ?", new String[]{path});
+                    deleted++;
                 }
-
-                // Чистим осиротевшие токены
-                db.execSQL("DELETE FROM dict WHERE id NOT IN (SELECT DISTINCT token_id FROM tokens)");
 
             } finally {
                 if (cursor != null) cursor.close();
             }
+        }
+        if (progressCallback != null) {
+            progressCallback.accept("statusUpdate", new StatusUpdate(deleted + " deleted", delMissing.getElapsed()));
         }
     }
 

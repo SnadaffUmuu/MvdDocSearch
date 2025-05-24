@@ -12,6 +12,7 @@ import java.util.Map;
 import java.util.regex.Pattern;
 
 import com.mvd.docsearchmvd.model.Token;
+import com.mvd.docsearchmvd.util.Profiler;
 import com.mvd.docsearchmvd.util.Util;
 
 public class Tokenizer {
@@ -23,6 +24,7 @@ public class Tokenizer {
     }
 
     public List<Token> tokenize(String text) {
+        long timerStart = System.currentTimeMillis();
         Map<String, IntList> tokenMap = new LinkedHashMap<>();
 
         char[] chars = text.toCharArray();
@@ -76,7 +78,7 @@ public class Tokenizer {
 //            tokens.add(new Token(token, sb.toString(), toDeltaVarIntBlob(positions)));
             tokens.add(new Token(token, toDeltaVarIntBlob(positions)));
         }
-
+        Profiler.get("tokenize").record(System.currentTimeMillis() - timerStart);
         return tokens;
     }
 
