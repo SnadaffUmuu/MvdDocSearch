@@ -7,11 +7,11 @@ public class ProgressUpdate {
 
     public int totalFiles;
 
-    public long elapsed;
+    public String elapsed;
 
     public int percent;
 
-    public ProgressUpdate(String fileName, int filesDone, int totalFiles, long elapsed) {
+    public ProgressUpdate(String fileName, int filesDone, int totalFiles, String elapsed) {
         this.fileName = fileName;
         this.filesDone = filesDone;
         this.totalFiles = totalFiles;

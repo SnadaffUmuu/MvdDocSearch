@@ -3,10 +3,13 @@ package com.mvd.docsearchmvd;
 import static com.mvd.docsearchmvd.util.Util.getStackTrace;
 import static com.mvd.docsearchmvd.util.Util.sendResultToJS;
 
+import android.app.NotificationManager;
 import android.content.*;
 import android.webkit.JavascriptInterface;
 import android.util.Log;
 import android.webkit.WebView;
+
+import androidx.core.app.NotificationCompat;
 
 import com.google.gson.reflect.TypeToken;
 import com.mvd.docsearchmvd.db.DatabaseManager;
@@ -14,12 +17,12 @@ import com.mvd.docsearchmvd.indexer.FileIndexer;
 import com.mvd.docsearchmvd.model.Hit;
 import com.mvd.docsearchmvd.model.StatusUpdate;
 import com.mvd.docsearchmvd.search.SearchEngine;
+import com.mvd.docsearchmvd.model.ProgressUpdate;
 
 import com.google.gson.Gson;
 
 import com.mvd.docsearchmvd.model.ApiResponse;
 import com.mvd.docsearchmvd.util.LogTimer;
-import com.mvd.docsearchmvd.util.NativeLogger;
 import com.mvd.docsearchmvd.util.Profiler;
 import com.mvd.docsearchmvd.util.SettingsManager;
 
@@ -46,8 +49,12 @@ public class WebAppInterface {
     private WebView webView;
     private final Gson gson = new Gson();
     private SettingsManager settingsManager;
+    private NotificationManager notificationManager;
+    private NotificationCompat.Builder notificationBuilder;
+    private static final int NOTIFICATION_ID = 1001;
 
     WebAppInterface(Context ctx, WebView webView) {
+        Log.d(WebAppInterface.TAG, "WebAppInterface constructor called, context: " + ctx);
         this.context = ctx;
         this.webView = webView;
         this.settingsManager = new SettingsManager(context);
@@ -223,6 +230,10 @@ public class WebAppInterface {
 
             fileIndexer.setProgressCallback((type, payload) -> {
                 sendResultToJS(webView, new ApiResponse<>(type, payload));
+                if ("indexProgress".equals(type) && payload instanceof ProgressUpdate) {
+                    ProgressUpdate progress = (ProgressUpdate) payload;
+                    updateNotificationProgress(progress.filesDone, progress.totalFiles, progress.fileName);
+                }
             });
             db.setProgressCallback((type, payload) -> {
                 sendResultToJS(webView, new ApiResponse<>(type, payload));
@@ -241,7 +252,7 @@ public class WebAppInterface {
                     sendResultToJS(webView, new ApiResponse<>("statusUpdate",
                             new StatusUpdate("\uD83D\uDD01 Reindex started (" + roots.size() + " root folders)")));
                     db.getConnection().beginTransaction();
-
+                    startNotification("Updating");
                     fileIndexer.updateIndex(rootPathsFromClient);
 
                     db.getConnection().setTransactionSuccessful();
@@ -257,6 +268,7 @@ public class WebAppInterface {
                             new StatusUpdate("✅ Reindex completed", updateIndexTotal.getElapsed()))
                     );
                     sendResultToJS(webView, new ApiResponse<>("updateIndex", db.getAllFolders()));
+                    finishNotification("Updating finished");
                 }
             }).start();
 
@@ -288,6 +300,10 @@ public class WebAppInterface {
             FileIndexer fileIndexer = new FileIndexer(db, context, settingsManager);
             fileIndexer.setProgressCallback((type, payload) -> {
                 sendResultToJS(webView, new ApiResponse<>(type, payload));
+                if ("indexProgress".equals(type) && payload instanceof ProgressUpdate) {
+                    ProgressUpdate progress = (ProgressUpdate) payload;
+                    updateNotificationProgress(progress.filesDone, progress.totalFiles, progress.fileName);
+                }
             });
 
             new Thread(() -> {
@@ -295,7 +311,7 @@ public class WebAppInterface {
                 boolean success = false;
                 try {
                     db.getConnection().beginTransaction();
-
+                    startNotification("Indexing");
                     fileIndexer.updateIndex(folders);
 
                     db.getConnection().setTransactionSuccessful();
@@ -311,6 +327,7 @@ public class WebAppInterface {
                             new StatusUpdate("indexFolder finished", indexFolderTotal.getElapsed()))
                     );
                     sendResultToJS(webView, new ApiResponse<>("indexFolder", db.getAllFolders()));
+                    finishNotification("Indexing finished");
                 }
             }).start();
         } catch (Exception e) {
@@ -328,6 +345,10 @@ public class WebAppInterface {
 
             fileIndexer.setProgressCallback((type, payload) -> {
                 sendResultToJS(webView, new ApiResponse<>(type, payload));
+                if ("indexProgress".equals(type) && payload instanceof ProgressUpdate) {
+                    ProgressUpdate progress = (ProgressUpdate) payload;
+                    updateNotificationProgress(progress.filesDone, progress.totalFiles, progress.fileName);
+                }
             });
             db.setProgressCallback((type, payload) -> {
                 sendResultToJS(webView, new ApiResponse<>(type, payload));
@@ -347,7 +368,7 @@ public class WebAppInterface {
                     sendResultToJS(webView, new ApiResponse<>("statusUpdate",
                             new StatusUpdate("\uD83D\uDD01 Rebuilding started (" + roots.size() + " root folders)")));
                     db.getConnection().beginTransaction();
-
+                    startNotification("Rebuilding");
                     LogTimer clearTablesTimer = new LogTimer(true);
 
                     sendResultToJS(webView, new ApiResponse<>("statusUpdate",
@@ -376,6 +397,7 @@ public class WebAppInterface {
                             new StatusUpdate("Rebuilding index finished", totalTimer.getElapsed()))
                     );
                     sendResultToJS(webView, new ApiResponse<>("rebuildIndex", db.getAllFolders()));
+                    finishNotification("Rebuilding finished");
                 }
             }).start();
         } catch (Exception e) {
@@ -392,6 +414,7 @@ public class WebAppInterface {
 
     @JavascriptInterface
     public String getIndexedFolders () {
+        Log.d(WebAppInterface.TAG, "getIndexedFolders called, dbManager: " + ((MainActivity) context).getDbManager());
         DatabaseManager db = ((MainActivity) context).getDbManager();
         List<Map<String, String>> res = db.getAllFolders();
         Log.d(TAG, "all folders: " + res.size());
@@ -430,12 +453,54 @@ public class WebAppInterface {
     @JavascriptInterface
     public void requestCurrentExtensions() {
         String current = settingsManager.getAllowedExtensionsRaw();
-        final String js = "showPromptWithDefaults(" + JSONObject.quote(current) + ")";
+        final String js = "showExceptionsPrompt(" + JSONObject.quote(current) + ")";
+        webView.post(() -> webView.evaluateJavascript(js, null));
+    }
+
+    @JavascriptInterface
+    public void requestCurrentExcludedPaths() {
+        String current = settingsManager.getExcludedPathsRaw();
+        final String js = "showPathsPrompt(" + JSONObject.quote(current) + ")";
         webView.post(() -> webView.evaluateJavascript(js, null));
     }
 
     @JavascriptInterface
     public void saveExtensions(String csv) {
         settingsManager.saveAllowedExtensions(csv);
+    }
+
+    @JavascriptInterface
+    public void saveExcludedPaths(String csv) {
+        settingsManager.saveExcludedPaths(csv);
+    }
+
+    private void startNotification(String title) {
+        notificationManager = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
+        notificationBuilder = new NotificationCompat.Builder(context, "index_channel_id")
+                .setSmallIcon(R.drawable.ic_notify)
+                .setContentTitle(title)
+                .setContentText("Индексация началась…")
+                .setProgress(100, 0, true)
+                .setOngoing(true)
+                .setOnlyAlertOnce(true);
+        notificationManager.notify(NOTIFICATION_ID, notificationBuilder.build());
+    }
+
+    private void updateNotificationProgress(int done, int total, String filename) {
+        if (notificationBuilder == null || notificationManager == null) return;
+        int progress = total > 0 ? (100 * done / total) : 0;
+        notificationBuilder
+                .setContentText("Файл: " + filename)
+                .setProgress(100, progress, false);
+        notificationManager.notify(NOTIFICATION_ID, notificationBuilder.build());
+    }
+
+    private void finishNotification(String message) {
+        if (notificationBuilder == null || notificationManager == null) return;
+        notificationBuilder
+                .setContentText(message)
+                .setProgress(0, 0, false)
+                .setOngoing(false);
+        notificationManager.notify(NOTIFICATION_ID, notificationBuilder.build());
     }
 }

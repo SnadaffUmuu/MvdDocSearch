@@ -8,18 +8,19 @@
 </head>
 <style>
   :root {
-    --bg: #f3f3f3;
+    --bg: #e9e4e5;
     --text-color: #010102;
-    --button: #ccc;
-    --text-accent: #0018a3;
+    --button: #b9b9b9;
     --text-accent-border: #828aff;
-    --text-accent-bg: #eadbe2;
-    --text-accent-bg-deep: #fff;
+    --text-accent-bg: #fff;
+    --text-accent-bg-deep: #ffffff9c;
+    --inputBg: #fff;
     --borderDefault: var(--text-color);
     --borderNeutral: gray;
-    --semiBgOverlayed: #f5dae573;
-    --thinOverlayed: #ff60a14f;
+    --semiBgOverlayed: #d6cee1a3;
+    --thinOverlayed: #926cbb8c;
     --previewNavDotsBg: #e9a6c478;
+    --theBarDots: #2a51b7;
   }
 
   body.night {
@@ -27,10 +28,9 @@
     --bgDeep: #000;
     --text-color: #ad9f98;
     --button: #3c3c3c;
-    --text-accent: #b4bd6a;
     --text-accent-border: #7c7c7d;
-    --text-accent-bg: #2a2e2a;
-    --text-accent-bg-deep: #2d342d;
+    --text-accent-bg: #343a34;
+    --text-accent-bg-deep: #2b302b;
     --inputBg: #464646;
     --errorBox: #7c7c7d;
     --borderDefault: var(--text-color);
@@ -64,7 +64,7 @@
 
   main {
     box-sizing: border-box;
-    padding: 5px 0;
+    padding: 0 0 5px;
     width: 100%;
     max-width: 100%;
     min-height: 0;
@@ -81,7 +81,7 @@
     height: 100%;
     max-height: 100%;
     box-sizing: border-box;
-    padding-top: 10px;
+    /* padding-top: 10px; */
   }
 
   #mainInner>header {
@@ -119,7 +119,7 @@
 
   section,
   .section {
-    border: 1px solid var(--thinOverlayed);
+    border: 1px solid var(--text-accent-border);
     border-radius: 10px;
     padding: 5px;
     margin-bottom: 5px;
@@ -148,6 +148,7 @@
     border: 1px solid var(--text-accent-border);
     color: var(--text-color);
     font-size: 16px;
+    border-radius: 3px;
   }
 
   .hidden {
@@ -157,12 +158,14 @@
   #queryValidationMessage,
   #error {
     font-size: 12px;
-    padding: 5px 0;
+    padding: 5px;
     color: #66001a;
+    background: var(--inputBg);
+    border-radius: 0 0 5px 5px;
   }
 
   #searchWrap {
-    flex: 1 0 auto;
+    flex: 1 1 auto;
     margin-right: 10px;
   }
 
@@ -180,8 +183,6 @@
     max-height: 56vh;
     overflow: auto;
     box-sizing: border-box;
-    flex: 1 1 auto;
-    padding-top: 72px;
   }
 
   #searchResultsHeader {
@@ -408,7 +409,7 @@
   #theBar {
     height: 20px;
     flex: 0 0 auto;
-    background-image: radial-gradient(#2a51b7 1px, transparent 0px);
+    background-image: radial-gradient(var(--theBarDots) 1px, transparent 0px);
     background-repeat: repeat;
     background-size: 8px 8px;
     background-position: center;
@@ -442,11 +443,14 @@
     align-items: center !important;
   }
 
+  .wrapped {
+    flex-wrap: wrap !important;
+  }
+
   .closeModalButton {
     width: 30px;
     border-radius: 10px;
     text-align: center;
-    line-height: 29px;
   }
 
   .closeModal {
@@ -494,7 +498,7 @@
   }
 
   #progressBarWrap {
-    height: 52px;
+    height: 60px;
     overflow: hidden;
   }
 
@@ -553,7 +557,7 @@
   #lastTaskLog>div>strong,
   #searchLog>div>strong {
     flex: 0 0 auto;
-    padding-left:5px;
+    padding-left: 5px;
   }
 
   #searchLog {
@@ -574,6 +578,9 @@
     margin: 0;
     width: 100%;
     z-index: 1000;
+    box-sizing: border-box;
+    border: 2px solid var(--inputBg);
+    border-radius: 0 0 5px 5px;
   }
 
   .suggestions li {
@@ -597,7 +604,7 @@
       <div id="statusMessage"></div>
       <div id="progressBarWrap">
         <div id="fileName" class="hidden" data-initial-text="Файл: -">Файл: -</div>
-        <div id="elapsed" class="hidden" data-initial-text="Time: -s">Time: -s</div>
+        <div id="elapsed" class="hidden" data-initial-text="Time: -">Time: -</div>
         <progress class="hidden" id="progressBar" value="0" max="100"></progress>
       </div>
       <button id="closeProgress" class="hidden" onclick="toggleSpinner(false)">X</button>
@@ -619,7 +626,7 @@
       </section>
       <section id="lastTaskLog" class="hidden"></section>
     </section>
-    <section class="minimalRow colFlexContainer justified">
+    <section class="minimalRow colFlexContainer justified wrapped">
       <button onclick="updateIndex()">Update</button>
       <button onclick="rebuildIndex()">Rebuild</button>
       <button onclick="clearDB()" class="dangerousButton">Clear</button>
@@ -629,7 +636,10 @@
   </div>
   <div id="prefs" class="modal hidden">
     <section>
-      <button onclick="Android.requestCurrentExtensions()">Задать расширения</button>
+      <button onclick="Android.requestCurrentExtensions()">Расширения</button>
+    </section>
+    <section>
+      <button onclick="Android.requestCurrentExcludedPaths()">Исключить пути</button>
     </section>
     <button class="js-closeModal closeModal">X</button>
   </div>
@@ -638,14 +648,12 @@
       <header class="minimalRow">
         <div class="colFlexContainer justified">
           <div id="searchWrap">
-            <input type="search" autocomplete="off" id="searchQuery" oninput="validateQuery(this)"
-              list="searchSuggestions">
-            <div id="queryValidationMessage" class="hidden">Поиск не поддерживает пробелы, знаки препинания и эмодзи
-            </div>
+            <input type="search" autocomplete="off" id="searchQuery" oninput="validateQuery(this)">
           </div>
           <button id="searchButton" class="minimalCol" onclick="doSearch()">Search</button>
         </div>
         <input type="hidden" id="currentSearchQuery">
+        <div id="queryValidationMessage" class="hidden">Поиск не поддерживает пробелы, знаки препинания и эмодзи</div>
         <div id="searchResultsHeader" class="colFlexContainer justified">
           <span>
             Query: <strong id="searchResQuery"></strong>. Results: <span id="searchResCount"></span>
@@ -720,6 +728,8 @@
     const searchLogWrap = document.getElementById('searchLogWrap');
     const allowedExtensions = document.getElementById('allowedExtensions');
     const suggestionList = document.getElementById('suggestionList');
+    const mainHeader = document.querySelector('#mainInner > header');
+    const searchResultWrap = document.getElementById('searchResultWrap');
 
     let currentFileContent = null;
     let highlightedContent = null;
@@ -883,6 +893,7 @@
             top: 0,
             behavior: 'smooth'
           });
+          setSearchResLayout();
           timer.log('front: results to DOM finished');
         }
         timer.logTotal('front: doSearch finished');
@@ -925,7 +936,6 @@
         excerptsContainer.innerHTML = excerpts.join('');
         excerptsContainer.style.display = '';
         //scrollToBottom(main);
-        //scrollCurrentHitIntoView();
         displayFullFragment(indexes[0], indexes);
         prevChunk.classList.add('hidden');
       } else {
@@ -973,13 +983,10 @@
       const searchResEl = e.target.classList.contains('searchResult') ? e.target : e.target.closest('.searchResult');
       if(searchResEl) {
         if(currentHit != null) {
-          const el = document.querySelector(`[data-file-id='${currentHit}']`);
-          if(el) {
-            el.classList.remove('current');
-          }
+          currentHit.classList.remove('current');
         }
         searchResEl.classList.add('current');
-        currentHit = searchResEl.dataset.fileId;
+        currentHit = searchResEl;
         showExcerpts(searchResEl.dataset.filePath);
       }
     });
@@ -1370,23 +1377,71 @@
           el.scrollTo(options);
         }
     
-        function scrollCurrentHitIntoView() {
-          const current = document.querySelector('.searchResult.current');
-          const targetRect = current.getBoundingClientRect();
-          const containerRect = main.getBoundingClientRect();
-          const scrollTop = targetRect.top - containerRect.top + container.scrollTop;
-          container.scrollTo({
-            top: scrollTop,
-            behavior: 'smooth'
-          });
-        }
     */
-    function showPromptWithDefaults(defaults) {
+
+    function showExceptionsPrompt(defaults) {
       var response = prompt("Укажите расширения через запятую:", defaults);
       if(response !== null) {
         Android.saveExtensions(response);
       }
     }
+
+    function showPathsPrompt(defaults) {
+      var response = prompt("Укажите пути через запятую:", defaults);
+      if(response !== null) {
+        Android.saveExcludedPaths(response);
+      }
+    }
+
+    function setSearchResLayout() {
+      const sr = currentHit ? currentHit : document.querySelector('.searchResult');
+      if(!sr) return;
+      const paddingTop = mainHeader.offsetHeight + main.scrollTop;
+      const visibleHeight = searchResultWrap.clientHeight - paddingTop;
+      if(visibleHeight > sr.offsetHeight * 2) {
+        searchResultWrap.style.paddingTop = paddingTop + 'px';
+      }
+    }
+
+    let scrollTimeout;
+
+    main.addEventListener('scroll', () => {
+      clearTimeout(scrollTimeout);
+      if(currentHit) {
+        setTimeout(() => {
+          scrollCurrentIntoViewWithinResultWrap(searchResultWrap, currentHit);
+        }, 200)
+      }
+      setSearchResLayout();
+    });
+    setSearchResLayout();
+
+    function scrollCurrentIntoViewWithinResultWrap(wrap, current) {
+      if (!wrap || !current) return;
+      const margin = 15;
+
+      const paddingTop = parseFloat(getComputedStyle(wrap).paddingTop) || 0;
+      const wrapScrollTop = wrap.scrollTop;
+      const wrapClientHeight = wrap.clientHeight;
+
+      // Абсолютное положение current внутри wrap (с учётом вложенности)
+      const currentOffsetTop = current.offsetTop;
+      const currentOffsetBottom = currentOffsetTop + current.offsetHeight;
+
+      // Граница видимости: от scrollTop + paddingTop до scrollTop + height
+      const visibleTop = wrapScrollTop + paddingTop;
+      const visibleBottom = wrapScrollTop + wrapClientHeight;
+
+      // Если current выше видимой области
+      if (currentOffsetTop < visibleTop) {
+        wrap.scrollTop = currentOffsetTop - paddingTop - margin;
+      }
+      // Если current ниже видимой области
+      else if (currentOffsetBottom > visibleBottom) {
+        wrap.scrollTop = currentOffsetBottom - wrapClientHeight + margin;
+      }
+    }
+
 
   </script>
 </body>

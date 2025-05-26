@@ -7,8 +7,12 @@ import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 
 import android.app.AlertDialog;
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
@@ -67,13 +71,16 @@ public class MainActivity extends AppCompatActivity {
             super.onCreate(savedInstanceState);
             Log.d(WebAppInterface.TAG, "onCreate called");
             setContentView(R.layout.activity_main);
+            boolean permissionsRequested = false;
+
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
                 Log.d(WebAppInterface.TAG, "Android 11+");
                 if (!Environment.isExternalStorageManager()) {
                     Log.d(WebAppInterface.TAG, "the permission missing, starting intent");
                     Intent intent = new Intent(Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION);
                     startActivityForResult(intent, 101); // API 30+
-                    return;
+                    permissionsRequested = true;
+                    //return;
                 } else {
                     Log.d(WebAppInterface.TAG, "the permission exists");
                 }
@@ -85,15 +92,37 @@ public class MainActivity extends AppCompatActivity {
                             Manifest.permission.READ_EXTERNAL_STORAGE
                     }, 100); // API 29 и ниже
                     Log.d(WebAppInterface.TAG, "returning");
-                    return;
+                    permissionsRequested = true;
+                    //return;
                 } else {
                     Log.d(WebAppInterface.TAG, "the permission exists");
                 }
             }
-            Log.d(WebAppInterface.TAG, "creating databaseManager instance...");
-            dbManager = new DatabaseManager(this);
-            dbManager.init(false);
-            Log.d(WebAppInterface.TAG, "setupWebView is ready to be called");
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
+                        != PackageManager.PERMISSION_GRANTED) {
+                    ActivityCompat.requestPermissions(this,
+                            new String[]{Manifest.permission.POST_NOTIFICATIONS},
+                            1001);
+                    permissionsRequested = true;
+                }
+            }
+
+            if (permissionsRequested) {
+                return; // подождем разрешений
+            }
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                NotificationChannel channel = new NotificationChannel(
+                        "index_channel_id",
+                        "Indexing Progress",
+                        NotificationManager.IMPORTANCE_LOW
+                );
+                NotificationManager manager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+                manager.createNotificationChannel(channel);
+            }
+
+            Log.d(WebAppInterface.TAG, "calling setupWebView from onCreate");
             setupWebView();
         } catch (Exception e) {
             Log.e(WebAppInterface.TAG, e.getMessage() + "\n" + getStackTrace(e));
@@ -104,6 +133,7 @@ public class MainActivity extends AppCompatActivity {
     protected void onResume() {
         super.onResume();
         if (webView == null || webView.getUrl() == null) {
+            Log.d(WebAppInterface.TAG, "calling setupWebView from onResume" );
             setupWebView();
         }
     }
@@ -125,10 +155,15 @@ public class MainActivity extends AppCompatActivity {
                 Log.d(WebAppInterface.TAG, "webView is null in setupWebView()");
                 return;
             }
+            if (dbManager == null) {
+                dbManager = new DatabaseManager(this);
+                dbManager.init(false);
+            }
             webView.loadUrl("about:blank");
             webView.getSettings().setJavaScriptEnabled(true);
             webView.getSettings().setDomStorageEnabled(true);
             webView.getSettings().setCacheMode(WebSettings.LOAD_NO_CACHE);
+            Log.d(WebAppInterface.TAG, "initializing WebAppInterface from onCreate, context: " + this);
             webView.addJavascriptInterface(new WebAppInterface(this, webView), "Android");
             webView.setWebViewClient(new WebViewClient() {
                 @Override
@@ -196,6 +231,7 @@ public class MainActivity extends AppCompatActivity {
         if (requestCode == 101) {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
                 if (Environment.isExternalStorageManager()) {
+                    Log.d(WebAppInterface.TAG, "calling setupWebView from onActivityResult");
                     setupWebView();
                 } else {
                     Toast.makeText(this, "Требуется доступ ко всем файлам", Toast.LENGTH_LONG).show();
@@ -220,6 +256,7 @@ public class MainActivity extends AppCompatActivity {
 
             if (allGranted) {
                 Log.d(WebAppInterface.TAG, "the permission granted");
+                Log.d(WebAppInterface.TAG, "calling setupWebView from onCreate");
                 setupWebView();
             } else {
                 Log.d(WebAppInterface.TAG, "the permission missing");

@@ -1,6 +1,7 @@
 package com.mvd.docsearchmvd.indexer;
 
 import static com.mvd.docsearchmvd.util.Util.sendResultToJS;
+import static com.mvd.docsearchmvd.util.Util.formatElapsed;
 
 import android.content.Context;
 import android.database.sqlite.SQLiteDatabase;
@@ -29,9 +30,6 @@ public class FileIndexer {
     private final DatabaseManager db;
     private final Tokenizer tokenizer;
     private final TokenDictionary dict;
-    private final String[] pathExceptions = {
-            "."
-    };
 
     private final SettingsManager settingsManager;
     private final Context context;
@@ -63,7 +61,7 @@ public class FileIndexer {
 
     private boolean toExclude(File res) {
         String name = res.getName().toLowerCase();
-        return Arrays.stream(pathExceptions).anyMatch(name::startsWith);
+        return settingsManager.getExcludedPaths().stream().anyMatch(name::startsWith);
     }
 
     private void indexFile(File file, String content) {
@@ -138,29 +136,6 @@ public class FileIndexer {
         }
     }
 
-    /*
-    //Использовался до того, как реализовали прогресс-бар и предварительный сбор всех файлов
-    public void indexFilesInDirectory(File resource) throws SQLException, IOException {
-        Log.d(WebAppInterface.TAG, "indexFilesInDirectory");
-        Log.d(WebAppInterface.TAG, resource.getName());
-        if (resource.isDirectory()) {
-            File[] files = resource.listFiles();
-            if (files == null) return;
-            for (File file : files) {
-                indexFilesInDirectory(file);
-            }
-        } else if (resource.isFile() && resource.canRead()) {
-            Log.d(WebAppInterface.TAG, "resource is file");
-            if (isAllowedExtension(resource)) {
-                Log.d(WebAppInterface.TAG, "allowed extension");
-                indexFileIfNeeded(resource);
-            } else {
-                Log.d(WebAppInterface.TAG, "Incorrect extension: " + resource.getName());
-            }
-        }
-    }
-     */
-
     public void updateIndex(File[] rootPathsFromClient) throws IOException, SQLException {
         LogTimer collecting = new LogTimer(true);
         List<FileEntry> allResources = collectAllResources(rootPathsFromClient);
@@ -190,9 +165,12 @@ public class FileIndexer {
             indexFileIfNeeded(resource);
 
             filesDone++;
-            long elapsed = (System.currentTimeMillis() - startTime) / 1000;
             if (progressCallback != null) {
-                progressCallback.accept("indexProgress", new ProgressUpdate(resource.file.getName(), filesDone, totalFiles, elapsed));
+                progressCallback.accept("indexProgress",
+                    new ProgressUpdate(resource.file.getName(),
+                        filesDone,
+                        totalFiles,
+                        formatElapsed(System.currentTimeMillis() - startTime)));
             }
         }
 

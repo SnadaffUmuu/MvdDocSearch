@@ -9,6 +9,7 @@ import java.util.Set;
 public class SettingsManager {
     private static final String PREFS_NAME = "app_settings";
     private static final String KEY_ALLOWED_EXTENSIONS = "allowed_extensions";
+    private static final String KEY_EXCLUDED_PATHS = "excluded_paths";
 
     private SharedPreferences preferences;
 
@@ -16,37 +17,44 @@ public class SettingsManager {
         preferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
     }
 
-        public void saveAllowedExtensions(String extensionsCsv) {
-        preferences.edit().putString(KEY_ALLOWED_EXTENSIONS, extensionsCsv).apply();
+    public void saveAllowedExtensions(String extensionsCsv) {
+        saveSetting(KEY_ALLOWED_EXTENSIONS, extensionsCsv);
+    }
+
+    public void saveExcludedPaths(String extensionsCsv) {
+        saveSetting(KEY_EXCLUDED_PATHS, extensionsCsv);
     }
 
     public Set<String> getAllowedExtensions() {
-        String csv = preferences.getString(KEY_ALLOWED_EXTENSIONS, "");
-        Set<String> result = new HashSet<>();
-        for (String ext : csv.split(",")) {
-            ext = ext.trim().toLowerCase();
-            if (!ext.isEmpty()) {
-                result.add(ext);
-            }
-        }
-        return result;
+        return getSettingsValue(KEY_ALLOWED_EXTENSIONS);
+    }
+
+    public Set<String> getExcludedPaths() {
+        return getSettingsValue(KEY_EXCLUDED_PATHS);
     }
 
     public String getAllowedExtensionsRaw() {
         return preferences.getString(KEY_ALLOWED_EXTENSIONS, "");
     }
 
-    public boolean isExtensionAllowed(String fileName) {
-        Set<String> allowed = getAllowedExtensions();
-        String ext = getFileExtension(fileName);
-        return allowed.contains(ext.toLowerCase());
+    public String getExcludedPathsRaw() {
+        return preferences.getString(KEY_EXCLUDED_PATHS, "");
     }
 
-    private String getFileExtension(String fileName) {
-        int lastDot = fileName.lastIndexOf('.');
-        return (lastDot != -1 && lastDot < fileName.length() - 1)
-                ? fileName.substring(lastDot + 1).toLowerCase()
-                : "";
+    private void saveSetting(String key, String value) {
+        preferences.edit().putString(key, value).apply();
+    }
+
+    private Set<String> getSettingsValue(String key) {
+        String csv = preferences.getString(key, "");
+        Set<String> result = new HashSet<>();
+        for (String path : csv.split(",")) {
+            path = path.trim().toLowerCase();
+            if (!path.isEmpty()) {
+                result.add(path);
+            }
+        }
+        return result;
     }
 }
 
