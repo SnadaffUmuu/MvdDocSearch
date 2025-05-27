@@ -9,18 +9,22 @@
 <style>
   :root {
     --bg: #e9e4e5;
+    --bgDeep: #fff;
     --text-color: #010102;
     --button: #b9b9b9;
     --text-accent-border: #828aff;
     --text-accent-bg: #fff;
-    --text-accent-bg-deep: #ffffff9c;
+    --text-accent-bg-deep: var(--bg);
     --inputBg: #fff;
     --borderDefault: var(--text-color);
     --borderNeutral: gray;
     --semiBgOverlayed: #d6cee1a3;
-    --thinOverlayed: #926cbb8c;
-    --previewNavDotsBg: #e9a6c478;
+    --currentItemBg: #fff;
+    --thinOverlayed: #6c6cbb8c;
+    /* --previewNavDotsBg: #e9a6c478; */
     --theBarDots: #2a51b7;
+    --dropShadow: #85789b59;
+    --errorText: #66001a;
   }
 
   body.night {
@@ -35,9 +39,13 @@
     --errorBox: #7c7c7d;
     --borderDefault: var(--text-color);
     --semiBgOverlayed: #f3f3f326;
+    --currentItemBg: #f3f3f326;
     --thinOverlayed: #f3f3f31a;
     --borderNeutral: gray;
-    --previewNavDotsBg: var(--thinOverlayed);
+    /* --previewNavDotsBg: var(--thinOverlayed); */
+    --dropShadow: #000000a1;
+    --theBarDots: #808ba7;
+    --errorText: #fff;
   }
 
   html,
@@ -73,6 +81,10 @@
     flex: 1 1 auto;
   }
 
+  main.preventScroll {
+    overflow: hidden;
+  }
+
   .dangerousButton {
     border: 1px solid #9e0028;
   }
@@ -85,10 +97,9 @@
   }
 
   #mainInner>header {
-    padding: 10px 15px;
+    padding: 20px 15px 5px;
     border-bottom: 1px solid var(--borderNeutral);
     position: fixed;
-    top: 49px;
     background: var(--bg);
     width: 100%;
     box-sizing: border-box;
@@ -101,7 +112,7 @@
   }
 
   .excerpt.current {
-    background: var(--semiBgOverlayed);
+    background: var(--currentItemBg);
   }
 
   .excerpt mark,
@@ -159,9 +170,12 @@
   #error {
     font-size: 12px;
     padding: 5px;
-    color: #66001a;
-    background: var(--inputBg);
-    border-radius: 0 0 5px 5px;
+    color: var(--errorText);
+    margin-top: 5px;
+  }
+
+  #searchHeader {
+    box-shadow: 0px 7px 7px var(--dropShadow);
   }
 
   #searchWrap {
@@ -173,6 +187,7 @@
     display: block;
     width: 100%;
     height: 100%;
+    outline: none;
   }
 
   #searchResCount {
@@ -183,10 +198,51 @@
     max-height: 56vh;
     overflow: auto;
     box-sizing: border-box;
+    /* margin-top: 92px; */
   }
 
   #searchResultsHeader {
-    padding: 10px 0;
+    padding: 15px 0 10px;
+  }
+
+  #queryInfo {
+    white-space: nowrap;
+    padding-right: 5px;
+    flex: 1 1 auto;
+  }
+
+  #pathFilter {
+    flex: 0 1 auto;
+    min-width: 0;
+    box-sizing: border-box;
+  }
+
+  #pathFilter button {
+    padding: 0 5px;
+    flex: 0 1 auto;
+    transition: transform 0.3s ease;
+  }
+
+  #pathFilterInput {
+    display: none;
+    flex: 1 1 auto;
+    min-width: 0;
+    box-sizing: border-box;
+    margin: 0 10px 0 5px;
+    background: transparent;
+    border: 0;
+    border-radius: 0;
+    border-bottom: 1px dashed var(--borderNeutral);
+    outline: none;
+    height: 20px;
+  }
+
+  #pathFilter.expanded #pathFilterInput {
+    display: unset;
+  }
+
+  #pathFilter.expanded button {
+    transform: rotate(90deg);
   }
 
   .searchResult {
@@ -200,7 +256,7 @@
   }
 
   .searchResult.current {
-    background: var(--semiBgOverlayed);
+    background: var(--currentItemBg);
   }
 
   .searchResult_details {
@@ -279,6 +335,7 @@
   #previews {
     max-width: 100vw;
     overflow: auto;
+    border-bottom-right-radius: 5px;
     height: 65vh;
     width: 100%;
     box-sizing: border-box;
@@ -299,7 +356,8 @@
     flex: 1 0 auto;
     height: 100%;
     box-sizing: border-box;
-    position: relative;
+    /* position: relative; */
+    /* z-index: -1; */
   }
 
   .previewNav {
@@ -348,9 +406,51 @@
     background: var(--errorBox);
   }
 
+  #menuTrigger {
+    width: 45px;
+    font-size: 32px;
+    margin-left: -15px;
+    text-align: center;
+    margin-top: -15px;
+    box-sizing: border-box;
+    height: 45px;
+    line-height: 55px;
+  }
+
   #menu {
-    padding: 10px 15px;
-    background: var(--bgDeep);
+    background: var(--bg);
+    position: fixed;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    transform: translateX(-100%);
+    transition: transform 0.3s ease;
+    z-index: 500;
+    /* border-bottom-right-radius: 5px; */
+    justify-content: flex-start;
+  }
+  
+  #menu.active {
+    transform: translateX(0);
+    box-shadow: 7px 7px 7px var(--dropShadow);
+  }
+
+  #menu button {
+    width: 70px;
+    height: 70px;
+    background: none;
+  }
+
+  #togglePrefs {
+    font-size: 18px;
+  }
+
+  #toggleNightMode {
+    font-size: 32px;
+  }
+
+  #toggleIndexView {
+    font-size: 25px;
   }
 
   #manageIndex,
@@ -416,11 +516,12 @@
     background-color: transparent;
     border-top: 10px solid var(--bg);
     border-bottom: 10px solid var(--bg);
+    box-shadow: 0px -7px 15px var(--dropShadow), 0px 7px 10px var(--dropShadow);
   }
 
   .minimalRow,
   .minimalCol {
-    flex: 0 0 auto;
+    flex: 0 1 auto;
   }
 
   .colFlexContainer {
@@ -522,6 +623,10 @@
     right: 15px;
   }
 
+  #showSearchLog {
+    margin-left: 5px;
+  }
+
   #fileName {
     text-overflow: clip;
     overflow: hidden;
@@ -594,11 +699,11 @@
 </style>
 
 <body class="rowFlexContainer">
-  <header id="menu" class="colFlexContainer minimalRow justified">
-    <button onclick="toggleModalView('#manageIndex')">index</button>
-    <button onclick="toggleModalView('#prefs')">prefs</button>
-    <button onClick="toggleNightMode()">theme</button>
-  </header>
+  <div id="menu" class="rowFlexContainer justified">
+    <button id="toggleNightMode" onClick="toggleNightMode()">☯</button>
+    <button id="toggleIndexView" onclick="toggleModalView('#manageIndex')">ⓘ</button>
+    <button id="togglePrefs" onclick="toggleModalView('#prefs')">⚙️</button>
+  </div>
   <div id="spinnerGlobal" class="hidden">
     <div id="progressContainer" class="hidden">
       <div id="statusMessage"></div>
@@ -622,6 +727,7 @@
     </div>
     <section id="indexResultContainer" class="rowFlexContainer">
       <section id="indexedFoldersListContainer">
+        <h5 id="indexedFoldersListTitle" class="hidden"></h5>
         <ul id="indexedFoldersList" class="hidden"></ul>
       </section>
       <section id="lastTaskLog" class="hidden"></section>
@@ -645,8 +751,9 @@
   </div>
   <main>
     <div id="mainInner">
-      <header class="minimalRow">
+      <header id="searchHeader" class="minimalRow">
         <div class="colFlexContainer justified">
+          <div id="menuTrigger" class="minimalCol">⋮</div>
           <div id="searchWrap">
             <input type="search" autocomplete="off" id="searchQuery" oninput="validateQuery(this)">
           </div>
@@ -655,8 +762,12 @@
         <input type="hidden" id="currentSearchQuery">
         <div id="queryValidationMessage" class="hidden">Поиск не поддерживает пробелы, знаки препинания и эмодзи</div>
         <div id="searchResultsHeader" class="colFlexContainer justified">
-          <span>
+          <span id="queryInfo">
             Query: <strong id="searchResQuery"></strong>. Results: <span id="searchResCount"></span>
+          </span>
+          <span id="pathFilter" class="colFlexContainer">
+            <input type="search" id="pathFilterInput">
+            <button class="button_small" onclick="togglePathFilter()">▼</button>
           </span>
           <button id="showSearchLog" class="button_small hidden" onclick="showLog()">?</button>
         </div>
@@ -730,9 +841,16 @@
     const suggestionList = document.getElementById('suggestionList');
     const mainHeader = document.querySelector('#mainInner > header');
     const searchResultWrap = document.getElementById('searchResultWrap');
+    const indexedFoldersListTitle = document.getElementById('indexedFoldersListTitle');
+    const pathFilter = document.getElementById('pathFilter');
+    const pathFilterInput = document.getElementById('pathFilterInput');
+    const theBar = document.getElementById('theBar');
+    const menu = document.getElementById('menu');
+    const menuTrigger = document.getElementById('menuTrigger');
 
     let currentFileContent = null;
     let highlightedContent = null;
+    let currentSearchResultsEls = [];
     let currentHit = null;
 
     function saveSearchQuery(query) {
@@ -849,6 +967,8 @@
       showSearchLog.classList.add('hidden');
       searchLog.innerHTML = '';
       currentHit = null;
+      currentFullStart = null;
+      currentFullEnd = null;
       const timer = createLogTimer('WebClient', false);
       timer.log('front: doSearch started');
       previewsEl.scroll({
@@ -893,6 +1013,7 @@
             top: 0,
             behavior: 'smooth'
           });
+          currentSearchResultsEls = [...document.querySelectorAll('.searchResult')];
           setSearchResLayout();
           timer.log('front: results to DOM finished');
         }
@@ -945,6 +1066,9 @@
       }
     }
 
+    let currentFullStart = null;
+    let currentFullEnd = null;
+
     function displayFullFragment(index, indexes) {
       const query = currentSearchQueryInput.value;
       const currentExcerpt = excerptsContainer.querySelector('.current');
@@ -962,8 +1086,10 @@
       prevChunk.classList.toggle('hidden', !prevExcerpt);
       nextChunk.classList.toggle('hidden', !nextExcerpt);
 
-      const textBefore = highlightOccurrences(currentFileContent.substring(Math.max(0, index - fullLimit), index), query);
-      const textAfter = highlightOccurrences(currentFileContent.substring(index + query.length, Math.min(index + query.length + fullLimit, currentFileContent.length)), query);
+      currentFullStart = Math.max(0, index - fullLimit);
+      currentFullEnd = Math.min(index + query.length + fullLimit, currentFileContent.length);
+      const textBefore = highlightOccurrences(currentFileContent.substring(currentFullStart, index), query);
+      const textAfter = highlightOccurrences(currentFileContent.substring(index + query.length, currentFullEnd), query);
       const trueQuery = currentFileContent.substring(index, index + query.length);
       fullPreviewEl.innerHTML = `${textBefore}<mark data-index="${index}">${trueQuery}</mark>${textAfter}`;
 
@@ -1123,6 +1249,8 @@
       }
       indexedFoldersListEl.innerHTML = allFoldersRes;
       indexedFoldersListEl.classList.toggle('hidden', !allFoldersRes.length);
+      indexedFoldersListTitle.innerHTML = data.data.length ? `Root folders: ${data.data.length}` : '';
+      indexedFoldersListTitle.classList.toggle('hidden', !data.data.length);
       deleteIndexesForFoldersButton.classList.toggle('hidden', !allFoldersRes.length);
     }
 
@@ -1283,6 +1411,7 @@
       const isNight = document.body.classList.toggle('night');
       console.log('front: isNight? ' + isNight);
       localStorage.setItem("nightMode", isNight ? "on" : "off");
+      toggleMenu();
     }
 
     const isNight = localStorage.getItem("nightMode") && localStorage.getItem("nightMode") === 'on';
@@ -1395,8 +1524,11 @@
 
     function setSearchResLayout() {
       const sr = currentHit ? currentHit : document.querySelector('.searchResult');
-      if(!sr) return;
       const paddingTop = mainHeader.offsetHeight + main.scrollTop;
+      if(!sr) {
+        searchResultWrap.style.paddingTop = paddingTop + 'px';
+        return;
+      }
       const visibleHeight = searchResultWrap.clientHeight - paddingTop;
       if(visibleHeight > sr.offsetHeight * 2) {
         searchResultWrap.style.paddingTop = paddingTop + 'px';
@@ -1414,10 +1546,11 @@
       }
       setSearchResLayout();
     });
+
     setSearchResLayout();
 
     function scrollCurrentIntoViewWithinResultWrap(wrap, current) {
-      if (!wrap || !current) return;
+      if(!wrap || !current) return;
       const margin = 15;
 
       const paddingTop = parseFloat(getComputedStyle(wrap).paddingTop) || 0;
@@ -1433,15 +1566,137 @@
       const visibleBottom = wrapScrollTop + wrapClientHeight;
 
       // Если current выше видимой области
-      if (currentOffsetTop < visibleTop) {
+      if(currentOffsetTop < visibleTop) {
         wrap.scrollTop = currentOffsetTop - paddingTop - margin;
       }
       // Если current ниже видимой области
-      else if (currentOffsetBottom > visibleBottom) {
+      else if(currentOffsetBottom > visibleBottom) {
         wrap.scrollTop = currentOffsetBottom - wrapClientHeight + margin;
       }
     }
 
+    function togglePathFilter() {
+      pathFilter.classList.toggle('expanded');
+      if(!pathFilter.classList.contains('expanded')) {
+        pathFilterInput.value = '';
+        pathFilterInput.dispatchEvent(new Event('input'));
+        currentSearchResultsEls.forEach(el => el.style.display = '');
+      } else {
+        pathFilterInput.focus();
+      }
+    }
+
+    pathFilterInput.addEventListener('input', () => {
+      if(pathFilterInput.value.trim().toLowerCase().length > 2) {
+        currentSearchResultsEls.forEach(el => {
+          el.style.display = el.dataset.filePath.toLowerCase().indexOf(pathFilterInput.value) >= 0 ? '' : 'none';
+        })
+      } else {
+        currentSearchResultsEls.forEach(el => el.style.display = '');
+      }
+    });
+
+    let startTouchY = 0;
+    let scrollIntentCount = 0;
+    let loadCooldown = false;
+    const SCROLL_THRESHOLD = 30; // минимальная дельта для жеста
+    const SCROLL_INTENT_THRESHOLD = 3; // сколько жестов подряд надо
+    let lastTouchY = 0;
+
+    fullPreviewOuter.addEventListener('touchstart', (e) => {
+      if(e.touches.length > 0) {
+        startTouchY = e.touches[0].clientY;
+      }
+    }, {passive: true});
+
+
+    fullPreviewOuter.addEventListener('touchend', (e) => {
+      const el = fullPreviewOuter;
+
+      const atTop = el.scrollTop <= 1;
+      const atBottom = el.scrollTop + el.clientHeight >= el.scrollHeight - 1;
+
+      const endTouchY = startTouchY; // уже было
+      const lastTouchY = e.changedTouches[0].clientY;
+      const deltaY = lastTouchY - startTouchY;
+
+      const isUp = deltaY > SCROLL_THRESHOLD;
+      const isDown = deltaY < -SCROLL_THRESHOLD;
+
+      const isScrollingFurther =
+        (atTop && isUp) ||
+        (atBottom && isDown);
+
+      if(isScrollingFurther && !loadCooldown) {
+        scrollIntentCount++;
+        if(scrollIntentCount >= SCROLL_INTENT_THRESHOLD) {
+          scrollIntentCount = 0;
+          loadCooldown = true;
+          if(atBottom) {
+            appendChunk(true);
+          } else if(atTop) {
+            appendChunk(false);
+          }
+          setTimeout(() => loadCooldown = false, 500);
+        }
+      } else {
+        scrollIntentCount = 0;
+      }
+    }, {passive: true});
+
+    function appendChunk(isDown) {
+      console.log(`Грузи дальше ${(isDown ? 'вниз' : 'вверх')}!`);
+      if(!currentFileContent) return;
+      if(!isDown && currentFullStart === null || isDown && currentFullEnd === null) {
+        return;
+      }
+      if(isDown && currentFullEnd === currentFileContent.length
+        || !isDown && currentFullStart === 0) return;
+      if(isDown) {
+        const newFullEnd = Math.min(currentFullEnd + fullLimit, currentFileContent.length);
+        const chunk = currentFileContent.substring(currentFullEnd, newFullEnd);
+        currentFullEnd = newFullEnd;
+        fullPreview.innerHTML = fullPreview.innerHTML + chunk;
+      } else {
+        // 1. Запоминаем текущую scroll-высоту ДО вставки
+        const previousScrollHeight = fullPreviewOuter.scrollHeight;
+        // 2. Вставляем контент
+        const newFullStart = Math.max(0, currentFullStart - fullLimit);
+        const chunk = currentFileContent.substring(newFullStart, currentFullStart);
+        currentFullStart = newFullStart;
+        fullPreview.innerHTML = chunk + fullPreview.innerHTML;
+        // 3. Разница в scrollHeight — это сколько прибавилось сверху
+        const addedHeight = fullPreviewOuter.scrollHeight - previousScrollHeight;
+        // 4. Прокручиваем вниз на эту величину
+        fullPreviewOuter.scrollTop += addedHeight;
+      }
+    }
+
+    document.addEventListener('touchstart', function (e) {
+      const target = e.target;
+      if(theBar.contains(target)) {
+        main.classList.remove('preventScroll');
+      } else {
+        main.classList.add('preventScroll');
+      }
+    }, {passive: true});
+
+    document.addEventListener('click', (e) => {
+      if(menu.classList.contains('active') && !menu.contains(e.target)) {
+        toggleMenu(e);
+      }
+    });
+
+    menuTrigger.addEventListener('click', (e) => {
+      toggleMenu(e);
+    })
+
+    function toggleMenu(e) {
+      if (e) {
+        e.stopPropagation();
+      }
+      menu.classList.toggle('active');
+    }
 
   </script>
 </body>
