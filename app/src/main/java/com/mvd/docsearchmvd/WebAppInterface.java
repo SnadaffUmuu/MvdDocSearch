@@ -66,17 +66,10 @@ public class WebAppInterface {
 
             sendResultToJS(webView, new ApiResponse<>("search",
                     new StatusUpdate("Search started " + query)));
-//            NativeLogger.writeResultToFile(new ApiResponse<>("search",
-//                  new StatusUpdate("search started " + query)));
 
             Log.d(TAG, "back: doSearch called, query: " + query);
 
             DatabaseManager db = ((MainActivity) context).getDbManager();
-
-//            db.setProgressCallback((type, payload) -> {
-//                sendResultToJS(webView, new ApiResponse<>(type, payload));
-//                NativeLogger.writeResultToFile(new ApiResponse<>(type, payload));
-//            });
 
             SearchEngine se = new SearchEngine(db);
 

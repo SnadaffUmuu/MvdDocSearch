@@ -19,13 +19,11 @@ import com.mvd.docsearchmvd.util.Util;
 import android.util.Log;
 
 public class Tokenizer {
-
-    private static final Pattern PUNCTUATION_OR_SYMBOL = Pattern.compile("[\\p{P}\\p{So}ー々〆〤\u3000\u3001\u3002\u300C\u300D\u300E\u300F]");
+    private static final Pattern PUNCTUATION_OR_SYMBOL = Pattern.compile( "[\\p{P}\\p{S}\\p{N}\\p{Z}\\p{C}ー々〆〤]");
     private static final Pattern EMOJI = Pattern.compile("[\\uD83C-\\uDBFF\\uDC00-\\uDFFF]+");
 
     public Tokenizer() {
     }
-
     public List<Token> tokenize(String text) {
         Log.d(WebAppInterface.TAG, "Start tokenize method");
         long timerStart = System.currentTimeMillis();

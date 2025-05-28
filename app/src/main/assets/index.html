@@ -21,10 +21,12 @@
     --semiBgOverlayed: #d6cee1a3;
     --currentItemBg: #fff;
     --thinOverlayed: #6c6cbb8c;
-    /* --previewNavDotsBg: #e9a6c478; */
     --theBarDots: #2a51b7;
     --dropShadow: #85789b59;
     --errorText: #66001a;
+    --appColor: #7c0023;
+    --appColor2: #3700b3;
+    --paleBorder: #65667b91;
   }
 
   body.night {
@@ -46,6 +48,11 @@
     --dropShadow: #000000a1;
     --theBarDots: #808ba7;
     --errorText: #fff;
+    --paleBorder: #f3f3f326;
+  }
+
+  ::selection {
+    background: #8d91c270;
   }
 
   html,
@@ -245,6 +252,19 @@
     transform: rotate(90deg);
   }
 
+  #pathOrderDesc {
+    margin-left: 10px;
+  }
+
+  #searchResult {
+    display: flex;
+    flex-flow: column nowrap;
+  }
+
+  #searchResult.reversed {
+    flex-direction: column-reverse
+  }
+
   .searchResult {
     padding: 5px 15px;
     border-bottom: 1px dashed gray;
@@ -396,6 +416,10 @@
     white-space: pre-wrap;
   }
 
+  #fullPreview.chat {
+    white-space: normal;
+  }
+
   #error {
     position: fixed;
     bottom: 5px;
@@ -429,7 +453,7 @@
     /* border-bottom-right-radius: 5px; */
     justify-content: flex-start;
   }
-  
+
   #menu.active {
     transform: translateX(0);
     box-shadow: 7px 7px 7px var(--dropShadow);
@@ -624,7 +648,7 @@
   }
 
   #showSearchLog {
-    margin-left: 5px;
+    margin-left: 10px;
   }
 
   #fileName {
@@ -696,6 +720,30 @@
   .suggestions li:hover {
     background-color: #f0f0f0;
   }
+
+  .chat-message {
+    padding: 3px 0;
+    border-bottom: 1px dashed var(--semiBgOverlayed);
+  }
+
+  .chat-message .from,
+  .excerpt.chat .from {
+    display:inline-block;
+    margin-right:5px;
+    width: 15px;
+    text-align: center;
+    vertical-align: baseline;
+    opacity:0.6;
+  }
+
+  .excerpt.chat .date, 
+  .chat-message .date {
+    font-size: 12px;
+    opacity:0.5;
+    display:inline-block;
+    padding-left:5px;
+    vertical-align: baseline;
+  }
 </style>
 
 <body class="rowFlexContainer">
@@ -763,12 +811,13 @@
         <div id="queryValidationMessage" class="hidden">Поиск не поддерживает пробелы, знаки препинания и эмодзи</div>
         <div id="searchResultsHeader" class="colFlexContainer justified">
           <span id="queryInfo">
-            Query: <strong id="searchResQuery"></strong>. Results: <span id="searchResCount"></span>
+            Query: <strong id="searchResQuery"></strong>. Files: <span id="searchResCount"></span>
           </span>
           <span id="pathFilter" class="colFlexContainer">
             <input type="search" id="pathFilterInput">
             <button class="button_small" onclick="togglePathFilter()">▼</button>
           </span>
+          <button id="pathOrderDesc" class="button_small" onclick="reorderSearchResults()">↑↓</button>
           <button id="showSearchLog" class="button_small hidden" onclick="showLog()">?</button>
         </div>
       </header>
@@ -849,9 +898,11 @@
     const menuTrigger = document.getElementById('menuTrigger');
 
     let currentFileContent = null;
+    let currentChatMessages = null;
     let highlightedContent = null;
     let currentSearchResultsEls = [];
     let currentHit = null;
+    const allowedOverflowFactor = 1.2;
 
     function saveSearchQuery(query) {
       const keepCount = 10;
@@ -969,6 +1020,9 @@
       currentHit = null;
       currentFullStart = null;
       currentFullEnd = null;
+      currentFullMsgStart = null;
+      currentFullMsgEnd = null;
+      currentChatMessages = null;
       const timer = createLogTimer('WebClient', false);
       timer.log('front: doSearch started');
       previewsEl.scroll({
@@ -1036,7 +1090,7 @@
       const query = currentSearchQueryInput.value;
       const response = JSON.parse(Android.getFileContent(path));
       if(response.success) {
-        currentFileContent = response.data;
+
         excerptsContainer.innerHTML = '';
         fullPreviewEl.innerHTML = '';
         excerptsContainer.style.display = 'none';
@@ -1044,20 +1098,72 @@
         previewsEl.scroll({
           left: 0,
           behavior: 'smooth'
-        })
+        });
 
         const excerpts = [];
-        const indexes = findAllOccurrencesWithPositions(currentFileContent, query);
-        indexes.forEach((index, i) => {
-          const textBefore = currentFileContent.substring(Math.max(0, index - shortLimit), index);
-          const textAfter = currentFileContent.substring(index + query.length, index + query.length + shortLimit);
-          const trueQuery = currentFileContent.substring(index, index + query.length);
-          excerpts.push(`<div class="excerpt" data-index="${index}">${textBefore}<mark>${trueQuery}</mark>${textAfter}</div>`);
-        });
+
+        if(isLikelyChatFile(path, response.data)) {
+          const jsonText = extractJsonArrayFromJsFile(response.data);
+          currentChatMessages = JSON.parse(jsonText);
+          currentFileContent = null;
+          const regex = new RegExp(escapeRegExp(query), 'gi');
+          let firstHitIndex = null;
+          let firstMsgIndex = null;
+
+          currentChatMessages.forEach((msg, msgIndex) => {
+            const text = msg.t;
+            if(!text) return;
+
+            let match;
+            while((match = regex.exec(text)) !== null) {
+              const index = match.index;
+              if(firstHitIndex === null) { //самый первый фрагмент
+                firstHitIndex = index;
+                firstMsgIndex = msgIndex;
+              }
+              const matchLength = query.length;
+
+              const contextStart = Math.max(0, index - shortLimit);
+              const contextEnd = Math.min(text.length, index + matchLength + shortLimit);
+              const contextLength = contextEnd - contextStart;
+
+              const shouldTrim = contextLength > (shortLimit * 2 * allowedOverflowFactor);
+              let before = text.slice(contextStart, index);
+              let after = text.slice(index + matchLength, contextEnd);
+              const hit = text.slice(index, index + matchLength);
+
+              // если нужно, добавим многоточие при усечении
+              if(shouldTrim && contextStart > 0) before = '…' + before;
+              if(shouldTrim && contextEnd < text.length) after = after + '…';
+
+              excerpts.push(`
+                <div class="excerpt chat" data-msg-index="${msgIndex}" data-char-index="${index}">
+                  <div class="text">
+                    <span class="from">${msg.f}</span>: ${before}<mark>${hit}</mark>${after}<span class="date">${msg.d.replace('T', ' ')}</span>
+                  </div>
+                </div>
+              `);
+
+              if(regex.lastIndex === index) regex.lastIndex++;
+            }
+          });
+          displayFullFragmentForJson(firstMsgIndex, firstHitIndex);
+
+        } else {
+          currentFileContent = response.data;
+          currentChatMessages = null;
+          const indexes = findAllOccurrencesWithPositions(query);
+          indexes.forEach((index, i) => {
+            const textBefore = currentFileContent.substring(Math.max(0, index - shortLimit), index);
+            const textAfter = currentFileContent.substring(index + query.length, index + query.length + shortLimit);
+            const trueQuery = currentFileContent.substring(index, index + query.length);
+            excerpts.push(`<div class="excerpt" data-index="${index}">${textBefore}<mark>${trueQuery}</mark>${textAfter}</div>`);
+          });
+          displayFullFragment(indexes[0], indexes);
+        }
+
         excerptsContainer.innerHTML = excerpts.join('');
         excerptsContainer.style.display = '';
-        //scrollToBottom(main);
-        displayFullFragment(indexes[0], indexes);
         prevChunk.classList.add('hidden');
       } else {
         console.error('front: getFileContent error:', response.error);
@@ -1070,21 +1176,10 @@
     let currentFullEnd = null;
 
     function displayFullFragment(index, indexes) {
+      fullPreviewEl.classList.remove('chat');
       const query = currentSearchQueryInput.value;
-      const currentExcerpt = excerptsContainer.querySelector('.current');
-      let prevExcerpt = null;
-      let nextExcerpt = null;
-      if(currentExcerpt) {
-        prevExcerpt = currentExcerpt.previousElementSibling ? currentExcerpt.previousElementSibling : null;
-        nextExcerpt = currentExcerpt.nextElementSibling ? currentExcerpt.nextElementSibling : null;
-      } else {
-        const firstExcerpt = excerptsContainer.querySelector('.excerpt');
-        if(firstExcerpt) {
-          nextExcerpt = firstExcerpt.nextElementSibling;
-        }
-      }
-      prevChunk.classList.toggle('hidden', !prevExcerpt);
-      nextChunk.classList.toggle('hidden', !nextExcerpt);
+
+      setJumpNextElsState();
 
       currentFullStart = Math.max(0, index - fullLimit);
       currentFullEnd = Math.min(index + query.length + fullLimit, currentFileContent.length);
@@ -1099,10 +1194,145 @@
       fullPreviewOuter.scrollTop = targetScrollTop;
     }
 
-    function looksLikeJSON(str) {
-      str = str.trim();
-      return (str.startsWith('{') && str.endsWith('}')) ||
-        (str.startsWith('[') && str.endsWith(']'));
+    let currentFullMsgStart = null;
+    let currentFullMsgEnd = null;
+
+    function displayFullFragmentForJson(msgIndex, charIndex) {
+      fullPreviewEl.classList.add('chat');
+      const query = currentSearchQueryInput.value;
+
+      setJumpNextElsState();
+
+      const fullMessages = [];
+      const lowerQuery = query.toLowerCase();
+      const regex = new RegExp(escapeRegExp(query), 'gi');
+
+      // Подсчитаем "вес" центрального сообщения
+      const centerMsg = currentChatMessages[msgIndex];
+      const contextBefore = [];
+      const contextAfter = [];
+
+      let budgetBefore = fullLimit;
+      let budgetAfter = fullLimit;
+
+      // Добавляем ДО
+      for(let i = msgIndex - 1;i >= 0;i--) {
+        const msg = currentChatMessages[i];
+        const len = msg.t?.length || 0;
+        if(len > budgetBefore) break;
+        contextBefore.unshift(msg);
+        budgetBefore -= len;
+      }
+
+      // Добавляем ПОСЛЕ
+      for(let i = msgIndex + 1;i < currentChatMessages.length;i++) {
+        const msg = currentChatMessages[i];
+        const len = msg.t?.length || 0;
+        if(len > budgetAfter) break;
+        contextAfter.push(msg);
+        budgetAfter -= len;
+      }
+
+      // Дополнительное добивание остатком, если надо
+      let leftover = budgetBefore + budgetAfter;
+
+      // Сначала добиваем ДО
+      for(let i = msgIndex - 1 - contextBefore.length;i >= 0 && leftover > 0;i--) {
+        const msg = currentChatMessages[i];
+        const len = msg.t?.length || 0;
+        if(len > leftover) break;
+        contextBefore.unshift(msg);
+        leftover -= len;
+      }
+
+      // Потом добиваем ПОСЛЕ
+      for(let i = msgIndex + 1 + contextAfter.length;i < currentChatMessages.length && leftover > 0;i++) {
+        const msg = currentChatMessages[i];
+        const len = msg.t?.length || 0;
+        if(len > leftover) break;
+        contextAfter.push(msg);
+        leftover -= len;
+      }
+
+      const allContextMessages = [...contextBefore, centerMsg, ...contextAfter];
+
+      currentFullMsgStart = msgIndex - contextBefore.length;
+      currentFullMsgEnd = msgIndex + 1 + contextAfter.length; // не включительно
+
+      fullPreviewEl.innerHTML = allContextMessages
+        .map((msg, i) => {
+          const index = contextBefore.length + i; // смещение
+          const globalMsgIndex = msgIndex - contextBefore.length + i;
+
+          const isCenter = globalMsgIndex === msgIndex;
+          const rawText = msg.t || '';
+
+          const textHtml = rawText
+            ? highlightWithMainMark(rawText, isCenter ? charIndex : -1)
+            : '';
+
+          return `
+        <div class="chat-message ${isCenter ? 'focused' : ''}">
+          <div class="text">
+              <span class="from">${msg.f}</span>: 
+              ${textHtml}
+              <span class="date">${msg.d.replace('T', ' ')}</span>
+          </div>
+        </div>
+      `;
+        })
+        .join('');
+
+      // Прокрутим к основному совпадению
+      const currentMatch = fullPreviewEl.querySelector('mark.main-hit');
+      fullPreviewEl.style.display = '';
+      const targetScrollTop = getInnerElScrollTopToCenterOfOuter(fullPreviewOuter, currentMatch);
+      fullPreviewOuter.scrollTop = targetScrollTop;
+    }
+
+    function highlightWithMainMark(text, charIndex) {
+      const query = currentSearchQueryInput.value;
+      const regex = new RegExp(escapeRegExp(query), 'gi');
+      let result = '';
+      let match;
+      let lastIndex = 0;
+
+      regex.lastIndex = 0;
+
+      while((match = regex.exec(text)) !== null) {
+        const i = match.index;
+        const partBefore = text.slice(lastIndex, i);
+        const partMatch = match[0];
+        const isMain = (i === charIndex); // локальный индекс в этом тексте
+
+        result += partBefore;
+        result += isMain
+          ? `<mark class="main-hit" data-index="${charIndex}">${partMatch}</mark>`
+          : `<mark>${partMatch}</mark>`;
+
+        lastIndex = i + partMatch.length;
+
+        if(regex.lastIndex === i) regex.lastIndex++;
+      }
+      result += text.slice(lastIndex);
+      return result;
+    }
+
+    function setJumpNextElsState() {
+      const currentExcerpt = excerptsContainer.querySelector('.current');
+      let prevExcerpt = null;
+      let nextExcerpt = null;
+      if(currentExcerpt) {
+        prevExcerpt = currentExcerpt.previousElementSibling ? currentExcerpt.previousElementSibling : null;
+        nextExcerpt = currentExcerpt.nextElementSibling ? currentExcerpt.nextElementSibling : null;
+      } else {
+        const firstExcerpt = excerptsContainer.querySelector('.excerpt');
+        if(firstExcerpt) {
+          nextExcerpt = firstExcerpt.nextElementSibling;
+        }
+      }
+      prevChunk.classList.toggle('hidden', !prevExcerpt);
+      nextChunk.classList.toggle('hidden', !nextExcerpt);
     }
 
     document.addEventListener('click', (e) => {
@@ -1122,7 +1352,13 @@
       if(excerptEl) {
         document.querySelector('.excerpt.current')?.classList.remove('current');
         excerptEl.classList.add('current');
-        displayFullFragment(parseInt(excerptEl.dataset.index));
+        if(excerptEl.classList.contains('chat')) {
+          const msgIndex = parseInt(excerptEl.dataset.msgIndex, 10);
+          const charIndex = parseInt(excerptEl.dataset.charIndex, 10);
+          displayFullFragmentForJson(msgIndex, charIndex);
+        } else {
+          displayFullFragment(parseInt(excerptEl.dataset.index));
+        }
         previewsEl.scrollTo({
           left: fullPreviewOuter.offsetLeft,
           behavior: 'smooth'
@@ -1130,51 +1366,17 @@
       }
     });
 
-    function findTagsWithContext(text, contextLength, tagName) {
-      /*
-      {
-        tag: '<div>DIV</div>',
-        before: 'Теги: ',
-        after: ' и <',
-        start: 6,
-        end: 18
-      }      
-      */
-      const regex = new RegExp(
-        `<${tagName}(?:\\s[^>]*)?>.*?<\\/${tagName}>`,
-        'g'
-      );
-      const results = [];
-      let match;
-
-      while((match = regex.exec(text)) !== null) {
-        const start = match.index;
-        const end = start + match[0].length;
-
-        results.push({
-          tag: match[0],
-          before: text.slice(Math.max(0, start - contextLength), start),
-          after: text.slice(end, end + contextLength),
-          start,
-          end
-        });
-
-        if(match.index === regex.lastIndex) regex.lastIndex++;
-      }
-
-      return results;
-    }
-
     function escapeRegExp(string) {
       return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     }
 
-    function findAllOccurrencesWithPositions(text, searchString) {
+    function findAllOccurrencesWithPositions(searchString) {
+      const results = [];
+      if(!currentFileContent) return;
       const regex = new RegExp(escapeRegExp(searchString), 'gi');
       let match;
-      const results = [];
 
-      while((match = regex.exec(text)) !== null) {
+      while((match = regex.exec(currentFileContent)) !== null) {
         results.push(match.index);
         if(match.index === regex.lastIndex) {
           regex.lastIndex++;
@@ -1315,10 +1517,6 @@
         next.click();
         excerptsOuter.scrollTop = getInnerElScrollTopToCenterOfOuter(excerptsOuter, next);
       }
-    }
-
-    function getStringSizeInKB(str) {
-      return (new Blob([str]).size) / 1024;
     }
 
     function getInnerElScrollTopToCenterOfOuter(outer, inner) {
@@ -1495,18 +1693,6 @@
           break;
       }
     }
-    /*
-        function scrollToBottom(el, isSmooth) {
-          const options = {
-            top: el.scrollHeight - el.clientHeight,
-          };
-          if(isSmooth) {
-            options.behavior = 'smooth';
-          }
-          el.scrollTo(options);
-        }
-    
-    */
 
     function showExceptionsPrompt(defaults) {
       var response = prompt("Укажите расширения через запятую:", defaults);
@@ -1633,9 +1819,17 @@
           scrollIntentCount = 0;
           loadCooldown = true;
           if(atBottom) {
-            appendChunk(true);
+            if (currentChatMessages !== null) {
+              appendChunkForJson(true);
+            } else {
+              appendChunk(true);
+            }
           } else if(atTop) {
-            appendChunk(false);
+            if (currentChatMessages !== null) {
+              appendChunkForJson(false);
+            } else {
+              appendChunk(false);
+            }
           }
           setTimeout(() => loadCooldown = false, 500);
         }
@@ -1672,6 +1866,68 @@
       }
     }
 
+    function appendChunkForJson(isDown) {
+      console.log(`Грузи дальше ${(isDown ? 'вниз' : 'вверх')}!`);
+      if(!currentChatMessages || currentFullMsgStart === null || currentFullMsgEnd === null) return;
+
+      const chunk = [];
+      let budget = fullLimit;
+
+      if(isDown) {
+        if(currentFullMsgEnd >= currentChatMessages.length) return;
+
+        for(let i = currentFullMsgEnd;i < currentChatMessages.length && budget > 0;i++) {
+          const msg = currentChatMessages[i];
+          const len = msg.t?.length || 0;
+          if(len > budget) break;
+          chunk.push(msg);
+          budget -= len;
+          currentFullMsgEnd++;
+        }
+
+        const html = getChatMessageHtml(chunk);
+
+        fullPreviewEl.innerHTML += html;
+
+      } else {
+        if(currentFullMsgStart <= 0) return;
+
+        const previousScrollHeight = fullPreviewOuter.scrollHeight;
+
+        for(let i = currentFullMsgStart - 1;i >= 0 && budget > 0;i--) {
+          const msg = currentChatMessages[i];
+          const len = msg.t?.length || 0;
+          if(len > budget) break;
+          chunk.unshift(msg);
+          budget -= len;
+          currentFullMsgStart--;
+        }
+
+        const html = getChatMessageHtml(chunk);
+
+        fullPreviewEl.innerHTML = html + fullPreviewEl.innerHTML;
+
+        const addedHeight = fullPreviewOuter.scrollHeight - previousScrollHeight;
+        fullPreviewOuter.scrollTop += addedHeight;
+      }
+    }
+
+    function getChatMessageHtml(chunk) {
+      return chunk.map((msg) => {
+        const rawText = msg.t || '';
+        const textHtml = rawText ? highlightWithMainMark(rawText, -1) : '';
+        return `
+        <div class="chat-message">
+          <div class="text">
+            <span class="from">${msg.f}</span>: 
+            ${textHtml}
+            <span class="date">${msg.d.replace('T', ' ')}</span>
+          </div>
+        </div>
+      `;
+      }).join('')
+    }
+
     document.addEventListener('touchstart', function (e) {
       const target = e.target;
       if(theBar.contains(target)) {
@@ -1692,12 +1948,33 @@
     })
 
     function toggleMenu(e) {
-      if (e) {
+      if(e) {
         e.stopPropagation();
       }
       menu.classList.toggle('active');
     }
 
+    function reorderSearchResults() {
+      searchResultEl.classList.toggle('reversed');
+    }
+
+    function isLikelyChatFile(path, text) {
+      const isChatFilename = /(?:^|\/)chat[-_]data\d+\.js$/i.test(path);
+      const isChatFormat = /^\s*var\s+data\d+\s*=\s*\[/.test(text);
+      return isChatFilename && isChatFormat;
+    }
+
+    function extractJsonArrayFromJsFile(text) {
+      const match = text.match(/^\s*var\s+data\d+\s*=\s*(\[.*)$/s);
+      if(!match) return null;
+
+      let jsonText = match[1].trim();
+
+      // Удаляем запятую перед закрывающей скобкой ] (в конце массива)
+      jsonText = jsonText.replace(/,\s*]$/, ']');
+
+      return jsonText;
+    }
   </script>
 </body>
 

@@ -291,14 +291,6 @@ public class DatabaseManager {
         Map<Integer, List<Integer>> result = new HashMap<>();
         LogTimer total = new LogTimer(WebAppInterface.TAG, false);
 
-//        Cursor cursor = db.rawQuery(
-//        "SELECT t.file_id, t.positions_blob, f.path " +
-//                "FROM tokens t " +
-//                "JOIN dict d ON t.token_id = d.id " +
-//                "JOIN files f ON t.file_id = f.id " +
-//                "WHERE d.token = ? " +
-//                "ORDER BY t.file_id",
-//        new String[]{token});
         Cursor cursor = db.rawQuery(
                 "SELECT t.file_id, t.positions_blob " +
                         "FROM tokens t " +
@@ -312,22 +304,13 @@ public class DatabaseManager {
                 byte[] blob = cursor.getBlob(1);
                 List<Integer> positions;
                 positions = decodeDeltaVarIntBlob(blob);
-                // Добавляем в Map — если ключ уже есть, объединяем списки
-//                result.merge(fileId, positions, (oldList, newList) -> {
-//                    oldList.addAll(newList);
-//                    return oldList;
-//                });
                 result.merge(fileId, positions, (oldList, newList) -> mergeSortedLists(oldList, newList));
-//                progressCallback.accept("search", new StatusUpdate("finished", t.getElapsed()));
                 Profiler.get("collectPositions").record(System.currentTimeMillis() - tt);
             }
         } finally {
             cursor.close();
         }
         total.logTotal("DatabaseManager: result for token ready");
-//        if (progressCallback != null) {
-//            progressCallback.accept("search", new StatusUpdate("reading [" + token + "] from tokens finished", filesPos.getElapsed()));
-//        }
         return result;
     }
 
@@ -380,9 +363,6 @@ public class DatabaseManager {
     }
 
     public void deleteOrphanTerms() {
-//        int deleted = db.compileStatement(
-//                "DELETE FROM dict WHERE id NOT IN (SELECT DISTINCT token_id FROM tokens)"
-//        ).executeUpdateDelete();
         int deleted = db.compileStatement(
                 "DELETE FROM dict\n" +
                         "WHERE NOT EXISTS (\n" +

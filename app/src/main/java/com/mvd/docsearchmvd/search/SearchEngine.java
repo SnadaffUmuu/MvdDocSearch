@@ -73,9 +73,6 @@ public class SearchEngine {
         }
 
         LogTimer sumCommonFiles = new LogTimer(false);
-//        if (progressCallback != null) {
-//            progressCallback.accept("search", new StatusUpdate("Retaining common files..."));
-//        }
 
         Set<Integer> commonFiles = new HashSet<>(postings.get(0).keySet());
         for (int i = 1; i < postings.size(); i++) {
@@ -93,8 +90,7 @@ public class SearchEngine {
             long countingHits = System.currentTimeMillis();
             List<Integer> base = postings.get(0).get(fileId);
             if (base == null || base.isEmpty()) continue;
-//            int matchCount = 0;
-            List<Integer> intersection = new ArrayList<>(base); // копия для пересечений
+            List<Integer> intersection = new ArrayList<>(base);
             boolean matched = true;
             for (int i = 1; i < queryTokens.size(); i++) {
                 List<Integer> next = postings.get(i).get(fileId);
@@ -120,13 +116,6 @@ public class SearchEngine {
                         b++;
                     }
                 }
-//                for (int va : intersection) {
-//                    int expected = va + offset;
-//                    int index = Collections.binarySearch(next, expected);
-//                    if (index >= 0) {
-//                        temp.add(va); // нашли нужную позицию в следующем токене
-//                    }
-//                }
 
                 if (temp.isEmpty()) {
                     matched = false;
@@ -135,7 +124,6 @@ public class SearchEngine {
 
                 intersection = temp;
             }
-            //tt.log("SearchEngine: pos matching finished");
             Profiler.get("hitsCounting").record(System.currentTimeMillis() - countingHits);
             if (matched) {
                 long tt = System.currentTimeMillis();
@@ -148,16 +136,6 @@ public class SearchEngine {
                 Profiler.get("makingHit").record(System.currentTimeMillis() - tt);
             }
         }
-//        for (int fileId : commonFiles) {
-//            int hitCount = countMatches(postings, fileId);
-//            if (hitCount > 0) {
-//                String path = db.getFilePath(fileId);
-//                File file = new File(path);
-//                if (file.exists()) {
-//                    result.add(new Hit(fileId, path, hitCount));
-//                }
-//            }
-//        }
         String message = "Search stats";
         for(String metric : stats.keySet()) {
             message += "<br>- " + metric + ": " + stats.get(metric);
@@ -174,35 +152,6 @@ public class SearchEngine {
         }
         result.sort(Comparator.comparing(hit -> hit.path.toLowerCase()));
         return result;
-    }
-
-    private int countMatches(List<Map<Integer, List<Integer>>> postingsPerToken, int fileId) {
-        List<Integer> base = postingsPerToken.get(0).get(fileId);
-        if (base == null || base.isEmpty()) return 0;
-
-        int hitCount = 0;
-
-        for (int va : base) {
-            boolean match = true;
-
-            for (int i = 1; i < postingsPerToken.size(); i++) {
-                List<Integer> next = postingsPerToken.get(i).get(fileId);
-                if (next == null || next.isEmpty()) {
-                    match = false;
-                    break;
-                }
-
-                int expected = va + i;
-                if (Collections.binarySearch(next, expected) < 0) {
-                    match = false;
-                    break;
-                }
-            }
-
-            if (match) hitCount++;
-        }
-
-        return hitCount;
     }
 
 }

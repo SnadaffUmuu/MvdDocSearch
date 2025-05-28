@@ -7,4 +7,8 @@
     <color name="teal_700">#FF018786</color>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
+    <color name="mvd_search">#FF7C0023</color>
+    <color name="mvd_primary">#FF828aff</color>
+    <color name="mvd_text_highlight">#80828aff</color>
+    <color name="mvd_primary_night">#FF2a51b7</color>
 </resources>
