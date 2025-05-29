@@ -6,6 +6,8 @@ import static com.mvd.docsearchmvd.util.Util.formatElapsed;
 import android.content.Context;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteStatement;
+import android.os.Handler;
+import android.os.Looper;
 import android.util.Log;
 
 import com.mvd.docsearchmvd.WebAppInterface;
@@ -36,6 +38,20 @@ public class FileIndexer {
     private int totalFiles = 0;
     private int filesDone = 0;
     private long startTime;
+
+    private final Handler handler = new Handler(Looper.getMainLooper());
+    private ProgressUpdate latestUpdate;
+    private final long UI_UPDATE_INTERVAL_MS = 200;
+
+    private final Runnable uiUpdater = new Runnable() {
+        @Override
+        public void run() {
+            if (latestUpdate != null && progressCallback != null) {
+                progressCallback.accept("indexProgress", latestUpdate);
+            }
+            handler.postDelayed(this, UI_UPDATE_INTERVAL_MS);
+        }
+    };
 
     private BiConsumer<String, Object> progressCallback;
 
@@ -125,9 +141,6 @@ public class FileIndexer {
     public void indexFileIfNeeded(FileEntry entry) throws SQLException, IOException {
         Log.d(WebAppInterface.TAG, "indexFileIfNeeded");
 
-        db.setProgressCallback((type, data) -> {
-
-        });
         String content = db.updateFileMetadata(entry);
 
         Log.d(WebAppInterface.TAG, "file content received");
@@ -159,20 +172,24 @@ public class FileIndexer {
         startTime = System.currentTimeMillis();
         totalFiles = allResources.size();
         Log.d(WebAppInterface.TAG, "allResources size: " + totalFiles);
+        handler.post(uiUpdater);
         for (FileEntry resource : allResources) {
             Log.d(WebAppInterface.TAG, resource.getPath());
 
             indexFileIfNeeded(resource);
 
             filesDone++;
-            if (progressCallback != null) {
-                progressCallback.accept("indexProgress",
-                    new ProgressUpdate(resource.file.getName(),
-                        filesDone,
-                        totalFiles,
-                        formatElapsed(System.currentTimeMillis() - startTime)));
-            }
+//            if (progressCallback != null) {
+//                progressCallback.accept("indexProgress",
+//                    new ProgressUpdate(resource.file.getName(),
+//                        filesDone,
+//                        totalFiles,
+//                        formatElapsed(System.currentTimeMillis() - startTime)));
+//            }
+            latestUpdate = new ProgressUpdate(resource.file.getName(), filesDone, totalFiles,
+                    formatElapsed(System.currentTimeMillis() - startTime));
         }
+        handler.removeCallbacks(uiUpdater);
 
         LogTimer orphans = new LogTimer(true);
         db.deleteOrphanTerms();

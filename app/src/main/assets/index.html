@@ -27,6 +27,7 @@
     --appColor: #7c0023;
     --appColor2: #3700b3;
     --paleBorder: #65667b91;
+    --iconColor:#3e00cb;
   }
 
   body.night {
@@ -49,6 +50,7 @@
     --theBarDots: #808ba7;
     --errorText: #fff;
     --paleBorder: #f3f3f326;
+    --iconColor:#7c0023;
   }
 
   ::selection {
@@ -94,6 +96,7 @@
 
   .dangerousButton {
     border: 1px solid #9e0028;
+    border-radius:3px;
   }
 
   #mainInner {
@@ -104,7 +107,7 @@
   }
 
   #mainInner>header {
-    padding: 20px 15px 5px;
+    padding: 15px 0 0;
     border-bottom: 1px solid var(--borderNeutral);
     position: fixed;
     background: var(--bg);
@@ -159,6 +162,77 @@
     padding: 0 5px;
   }
 
+  .icon {
+    background-color:transparent;
+    height:30px;
+    width:30px;
+    padding:0;
+    border-radius: 0;
+    display: flex;
+    flex-flow: row nowrap;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .icon path {
+    fill: var(--iconColor);
+  }
+
+  .icon svg {
+    display:block;
+    max-width: 100%;
+    max-height: 100%;
+  }
+
+  #menu .icon svg,
+  #manageIndex .icon svg,
+  #searchResultsHeader .icon svg {
+    width:20px;
+    height:20px;
+  }
+
+  #pathFilter .icon svg {
+    width:23px;
+    height:23px;
+  }
+
+  .icon.icon_add-folder {
+    background-image: url(img/add-folder.svg);
+  }
+
+  .icon.icon_database {
+    background-image: url(img/database.svg);
+  }
+
+  /* .icon.icon_dots {
+    background-image: url(img/dots.svg);
+    transform: rotate(90deg);
+  } */
+
+  .icon.icon_night {
+    background-image: url(img/night.svg);
+  }
+
+  .icon.icon_settings {
+    background-image: url(img/settings.svg);
+  }
+
+  .icon.icon_trash {
+    background-image: url(img/trash.svg);
+  }
+
+  .icon.icon_sort {
+    background-image: url(img/sort.svg);
+  }
+
+  .icon.icon_filter {
+    background-image: url(img/filter.svg);
+  }
+
+  /* .icon.icon_search {
+    background-image: url(img/search.svg);
+  } */
+
   input[type="text"],
   input[type="search"],
   textarea {
@@ -187,7 +261,13 @@
 
   #searchWrap {
     flex: 1 1 auto;
-    margin-right: 10px;
+  }
+
+  #searchButton {
+    width: 55px;
+    height: 35px;
+    background-size: 30px;
+    flex: 0 0 auto;
   }
 
   #searchQuery {
@@ -199,6 +279,7 @@
 
   #searchResCount {
     font-weight: bold;
+    margin-right:5px;
   }
 
   #searchResultWrap {
@@ -209,13 +290,14 @@
   }
 
   #searchResultsHeader {
-    padding: 15px 0 10px;
+    padding: 15px 15px 10px;
   }
 
   #queryInfo {
     white-space: nowrap;
     padding-right: 5px;
     flex: 1 1 auto;
+    font-size:20px;
   }
 
   #pathFilter {
@@ -225,8 +307,7 @@
   }
 
   #pathFilter button {
-    padding: 0 5px;
-    flex: 0 1 auto;
+    flex: 0 0 auto;
     transition: transform 0.3s ease;
   }
 
@@ -235,7 +316,6 @@
     flex: 1 1 auto;
     min-width: 0;
     box-sizing: border-box;
-    margin: 0 10px 0 5px;
     background: transparent;
     border: 0;
     border-radius: 0;
@@ -253,7 +333,9 @@
   }
 
   #pathOrderDesc {
-    margin-left: 10px;
+    margin-left: 5px;
+    background-size: 18px;
+    flex: 0 0 auto;
   }
 
   #searchResult {
@@ -345,8 +427,10 @@
     max-height: 70vh;
     overflow: auto;
     flex: 1 0 auto;
+    background: var(--bg);
+    border-top: 1px solid var(--iconColor);
   }
-
+  
   #fileName {
     margin: 0;
     padding: 0;
@@ -432,13 +516,13 @@
 
   #menuTrigger {
     width: 45px;
-    font-size: 32px;
-    margin-left: -15px;
-    text-align: center;
-    margin-top: -15px;
-    box-sizing: border-box;
-    height: 45px;
-    line-height: 55px;
+    height: 35px;
+    background-size: 30px;
+    flex: 0 0 auto;
+  }
+
+  #menuTrigger svg {
+    transform: rotate(90deg);
   }
 
   #menu {
@@ -462,24 +546,11 @@
   #menu button {
     width: 70px;
     height: 70px;
-    background: none;
-  }
-
-  #togglePrefs {
-    font-size: 18px;
-  }
-
-  #toggleNightMode {
-    font-size: 32px;
-  }
-
-  #toggleIndexView {
-    font-size: 25px;
   }
 
   #manageIndex,
   #prefs {
-    padding: 10px;
+    padding: 15px 10px;
     height: 100%;
     max-height: 100%;
     overflow: hidden;
@@ -518,16 +589,34 @@
     right: 20px;
   }
 
+  #indexRootsActions {
+    padding: 0 15px 10px;
+    border-bottom: 2px solid var(--iconColor);
+  }
+
+  #indexRootsActions h4,
+  #indexRootsActions h5 {
+    margin:0;
+  }
+
+  #indexGlobalActions {
+    padding: 15px 0 0;
+    border-top: 2px solid var(--iconColor);
+  }
+  
   #indexedFoldersListContainer {
     overflow: auto;
     flex: 1 0 auto;
+    background: var(--bg);
+    margin-bottom: 1px;
+    padding: 5px;
   }
 
   #indexResultContainer {
     flex: 1 1 auto;
     min-height: 0;
     overflow: auto;
-    padding-right: 15px;
+    padding: 0 10px;
   }
 
   #theBar {
@@ -649,6 +738,7 @@
 
   #showSearchLog {
     margin-left: 10px;
+    flex: 0 0 auto;
   }
 
   #fileName {
@@ -718,7 +808,7 @@
   }
 
   .suggestions li:hover {
-    background-color: #f0f0f0;
+    background-color: var(--currentItemBg);
   }
 
   .chat-message {
@@ -748,9 +838,34 @@
 
 <body class="rowFlexContainer">
   <div id="menu" class="rowFlexContainer justified">
-    <button id="toggleNightMode" onClick="toggleNightMode()">☯</button>
-    <button id="toggleIndexView" onclick="toggleModalView('#manageIndex')">ⓘ</button>
-    <button id="togglePrefs" onclick="toggleModalView('#prefs')">⚙️</button>
+    <button class="icon" id="toggleNightMode" onClick="toggleNightMode()">
+      <svg viewBox="0 0 329.039 329.039">
+        <path d="M328.307,226.785c-0.743-0.744-1.874-0.944-2.826-0.497c-22.006,10.286-46.545,15.723-70.963,15.723
+          c-44.739,0-86.799-17.422-118.433-49.056C86.413,143.283,73.017,67.17,102.751,3.558c0.446-0.953,0.247-2.083-0.497-2.826
+          c-0.744-0.744-1.874-0.942-2.826-0.497C81.267,8.724,64.814,20.274,50.525,34.563C17.943,67.144,0,110.463,0,156.539
+          c0,46.076,17.943,89.395,50.524,121.975c32.58,32.582,75.899,50.525,121.976,50.525c46.076,0,89.395-17.943,121.976-50.525
+          c14.29-14.289,25.839-30.743,34.328-48.903C329.249,228.658,329.051,227.529,328.307,226.785z"/>
+        <path d="M167.174,159.365c0,0.64,0.244,1.28,0.732,1.768c0.976,0.977,2.56,0.977,3.535,0
+          c12.417-12.417,24.907-18.713,37.123-18.713c12.216,0,24.706,6.296,37.123,18.713c0.488,0.488,1.128,0.732,1.768,0.732
+          c0.003,0,0.007,0,0.011,0c1.391,0.045,2.509-1.116,2.509-2.5c0-0.785-0.362-1.486-0.928-1.944
+          c-24.802-24.918-24.744-49.15,0.176-74.07c0.488-0.488,0.732-1.128,0.732-1.768c0-0.64-0.244-1.28-0.732-1.768
+          c-0.976-0.977-2.56-0.977-3.535,0c-12.417,12.416-24.907,18.713-37.123,18.713c-12.216,0-24.706-6.296-37.123-18.713
+          c-0.976-0.977-2.56-0.977-3.535,0c-0.488,0.488-0.732,1.128-0.732,1.768c0,0.64,0.244,1.28,0.732,1.768
+          c24.979,24.98,24.979,49.266,0,74.247C167.419,158.085,167.174,158.725,167.174,159.365z"/>
+      </svg>      
+    </button>
+    <button class="icon" id="toggleIndexView" onclick="toggleModalView('#manageIndex')">
+      <svg viewBox="0 0 16 16">
+        <path d="M13.1371 6.91018C13.4184 6.7695 13.7123 6.59981 14 6.40001V8C14 9.65685 11.3137 11 8 11C4.68629 11 2 9.65685 2 8V6.40001C2.28772 6.59981 2.58158 6.7695 2.86293 6.91018C4.28096 7.61919 6.09998 8 8 8C9.90002 8 11.719 7.61919 13.1371 6.91018Z"/>
+        <path d="M2 11.4V13C2 14.6569 4.68629 16 8 16C11.3137 16 14 14.6569 14 13V11.4C13.7123 11.5998 13.4184 11.7695 13.1371 11.9102C11.719 12.6192 9.90002 13 8 13C6.09998 13 4.28096 12.6192 2.86293 11.9102C2.58158 11.7695 2.28772 11.5998 2 11.4Z"/>
+        <path d="M8 0C11.3137 0 14 1.34315 14 3C14 4.65685 11.3137 6 8 6C4.68629 6 2 4.65685 2 3C2 1.34315 4.68629 0 8 0Z"/>
+      </svg>      
+    </button>
+    <button class="icon" id="togglePrefs" onclick="toggleModalView('#prefs')">
+      <svg viewBox="0 0 1920 1920">
+          <path d="M1703.534 960c0-41.788-3.84-84.48-11.633-127.172l210.184-182.174-199.454-340.856-265.186 88.433c-66.974-55.567-143.323-99.389-223.85-128.415L1158.932 0h-397.78L706.49 269.704c-81.43 29.138-156.423 72.282-223.962 128.414l-265.073-88.32L18 650.654l210.184 182.174C220.39 875.52 216.55 918.212 216.55 960s3.84 84.48 11.633 127.172L18 1269.346l199.454 340.856 265.186-88.433c66.974 55.567 143.322 99.389 223.85 128.415L761.152 1920h397.779l54.663-269.704c81.318-29.138 156.424-72.282 223.963-128.414l265.073 88.433 199.454-340.856-210.184-182.174c7.793-42.805 11.633-85.497 11.633-127.285m-743.492 395.294c-217.976 0-395.294-177.318-395.294-395.294 0-217.976 177.318-395.294 395.294-395.294 217.977 0 395.294 177.318 395.294 395.294 0 217.976-177.317 395.294-395.294 395.294" fill-rule="evenodd"/>
+      </svg>      
+    </button>
   </div>
   <div id="spinnerGlobal" class="hidden">
     <div id="progressContainer" class="hidden">
@@ -764,29 +879,34 @@
     </div>
   </div>
   <div id="manageIndex" class="rowFlexContainer modal hidden">
-    <div class="minimalRow">
-      <input type="hidden" id="currentIndexPath" value="">
-      <section class="colFlexContainer justified">
-        <button onclick="Android.selectFolder()">Выбрать папку</button>
-        <button id="deleteIndexesForFolders" class="hidden dangerousButton"
-          onClick="deleteIndexForSelectedFolders()">Delete selected</button>
-      </section>
-      <section id="taskResult" class="minimalRow hidden"></section>
+    <input type="hidden" id="currentIndexPath" value="">
+    <div id="indexRootsActions" class="centered colFlexContainer justified">
+      <button class="icon" onclick="Android.selectFolder()">
+        <svg viewBox="0 0 16 16">
+          <path d="M0 1H5L8 3H13V5H3.7457L2.03141 11H4.11144L5.2543 7H16L14 14H0V1Z"/>
+        </svg>
+      </button>
+      <h4 id="indexedFoldersListTitle" class="hidden"></h4>
+      <button id="deleteIndexesForFolders" class="hidden icon" onClick="deleteIndexForSelectedFolders()">
+        <svg viewBox="0 0 24 24">
+          <path d="M8 1.5V2.5H3C2.44772 2.5 2 2.94772 2 3.5V4.5C2 5.05228 2.44772 5.5 3 5.5H21C21.5523 5.5 22 5.05228 22 4.5V3.5C22 2.94772 21.5523 2.5 21 2.5H16V1.5C16 0.947715 15.5523 0.5 15 0.5H9C8.44772 0.5 8 0.947715 8 1.5Z"/>
+          <path d="M3.9231 7.5H20.0767L19.1344 20.2216C19.0183 21.7882 17.7135 23 16.1426 23H7.85724C6.28636 23 4.98148 21.7882 4.86544 20.2216L3.9231 7.5Z"/>
+        </svg>        
+      </button>
     </div>
-    <section id="indexResultContainer" class="rowFlexContainer">
-      <section id="indexedFoldersListContainer">
-        <h5 id="indexedFoldersListTitle" class="hidden"></h5>
+    <div id="indexResultContainer" class="rowFlexContainer">
+      <div id="indexedFoldersListContainer">
         <ul id="indexedFoldersList" class="hidden"></ul>
-      </section>
-      <section id="lastTaskLog" class="hidden"></section>
-    </section>
-    <section class="minimalRow colFlexContainer justified wrapped">
+      </div>
+      <div id="lastTaskLog" class="hidden"></div>
+    </div>
+    <div id="indexGlobalActions" class="minimalRow colFlexContainer justified wrapped">
       <button onclick="updateIndex()">Update</button>
       <button onclick="rebuildIndex()">Rebuild</button>
       <button onclick="clearDB()" class="dangerousButton">Clear</button>
       <button onclick="Android.exportDB()">Export</button>
       <button class="js-closeModal closeModalButton">X</button>
-    </section>
+    </div>
   </div>
   <div id="prefs" class="modal hidden">
     <section>
@@ -801,23 +921,42 @@
     <div id="mainInner">
       <header id="searchHeader" class="minimalRow">
         <div class="colFlexContainer justified">
-          <div id="menuTrigger" class="minimalCol">⋮</div>
+          <div id="menuTrigger" class="minimalCol icon">
+            <svg viewBox="0 0 24 24">
+              <path d="M7 12C7 13.1046 6.10457 14 5 14C3.89543 14 3 13.1046 3 12C3 10.8954 3.89543 10 5 10C6.10457 10 7 10.8954 7 12Z"/>
+              <path d="M21 12C21 13.1046 20.1046 14 19 14C17.8954 14 17 13.1046 17 12C17 10.8954 17.8954 10 19 10C20.1046 10 21 10.8954 21 12Z"/>
+              <path d="M14 12C14 13.1046 13.1046 14 12 14C10.8954 14 10 13.1046 10 12C10 10.8954 10.8954 10 12 10C13.1046 10 14 10.8954 14 12Z"/>
+            </svg>
+          </div>
           <div id="searchWrap">
             <input type="search" autocomplete="off" id="searchQuery" oninput="validateQuery(this)">
           </div>
-          <button id="searchButton" class="minimalCol" onclick="doSearch()">Search</button>
+          <button id="searchButton" class="minimalCol icon" onclick="doSearch()">
+            <svg viewBox="0 0 24 24">
+              <path fill-rule="evenodd" clip-rule="evenodd" d="M2 12C2 6.47715 6.47715 2 12 2C17.5228 2 22 6.47715 22 12C22 17.5228 17.5228 22 12 22C6.47715 22 2 17.5228 2 12ZM9 11.5C9 10.1193 10.1193 9 11.5 9C12.8807 9 14 10.1193 14 11.5C14 12.8807 12.8807 14 11.5 14C10.1193 14 9 12.8807 9 11.5ZM11.5 7C9.01472 7 7 9.01472 7 11.5C7 13.9853 9.01472 16 11.5 16C12.3805 16 13.202 15.7471 13.8957 15.31L15.2929 16.7071C15.6834 17.0976 16.3166 17.0976 16.7071 16.7071C17.0976 16.3166 17.0976 15.6834 16.7071 15.2929L15.31 13.8957C15.7471 13.202 16 12.3805 16 11.5C16 9.01472 13.9853 7 11.5 7Z"/>
+            </svg>            
+          </button>
         </div>
         <input type="hidden" id="currentSearchQuery">
         <div id="queryValidationMessage" class="hidden">Поиск не поддерживает пробелы, знаки препинания и эмодзи</div>
-        <div id="searchResultsHeader" class="colFlexContainer justified">
+        <div id="searchResultsHeader" class="colFlexContainer justified centered">
           <span id="queryInfo">
-            Query: <strong id="searchResQuery"></strong>. Files: <span id="searchResCount"></span>
+            <strong id="searchResQuery"></strong> : <span id="searchResCount"></span>
           </span>
-          <span id="pathFilter" class="colFlexContainer">
+          <span id="pathFilter" class="colFlexContainer centered">
             <input type="search" id="pathFilterInput">
-            <button class="button_small" onclick="togglePathFilter()">▼</button>
+            <button class="button_small icon" onclick="togglePathFilter()">
+              <svg viewBox="0 0 24 24">
+                <path d="M20.17 3.91C20.1062 3.78712 20.0101 3.68399 19.8921 3.61173C19.774 3.53947 19.6384 3.50084 19.5 3.5H4.5C4.36157 3.50084 4.226 3.53947 4.10792 3.61173C3.98984 3.68399 3.89375 3.78712 3.83 3.91C3.76636 4.03323 3.73915 4.17204 3.75155 4.31018C3.76395 4.44832 3.81544 4.58007 3.9 4.69L9.25 12V19.75C9.25259 19.9481 9.33244 20.1374 9.47253 20.2775C9.61263 20.4176 9.80189 20.4974 10 20.5H14C14.1981 20.4974 14.3874 20.4176 14.5275 20.2775C14.6676 20.1374 14.7474 19.9481 14.75 19.75V12L20.1 4.69C20.1846 4.58007 20.236 4.44832 20.2484 4.31018C20.2608 4.17204 20.2336 4.03323 20.17 3.91Z"/>
+              </svg>              
+            </button>
           </span>
-          <button id="pathOrderDesc" class="button_small" onclick="reorderSearchResults()">↑↓</button>
+          <button id="pathOrderDesc" class="button_small icon" onclick="reorderSearchResults()">
+            <svg viewBox="0 0 16 16">
+              <path d="M8 0L2 6V7H14V6L8 0Z"/>
+              <path d="M8 16L2 10V9H14V10L8 16Z"/>
+            </svg>
+          </button>
           <button id="showSearchLog" class="button_small hidden" onclick="showLog()">?</button>
         </div>
       </header>
@@ -869,10 +1008,9 @@
     const progressBarEl = document.getElementById('progressBar');
     const progressFileNameEl = document.getElementById('fileName');
     const progressElapsedEl = document.getElementById('elapsed');
-    const taskResult = document.getElementById('taskResult');
     const queryValidationMessageEl = document.getElementById('queryValidationMessage');
-    const searchButton = document.getElementById('searchButton');
     const errorContainer = document.getElementById('error');
+    const searchButton = document.getElementById('searchButton');
     const mainInner = document.getElementById('mainInner');
     const main = document.querySelector('main');
     const searchResCount = document.getElementById('searchResCount');
@@ -902,6 +1040,7 @@
     let highlightedContent = null;
     let currentSearchResultsEls = [];
     let currentHit = null;
+    let currentExcerpt = null;
     const allowedOverflowFactor = 1.2;
 
     function saveSearchQuery(query) {
@@ -1018,6 +1157,7 @@
       showSearchLog.classList.add('hidden');
       searchLog.innerHTML = '';
       currentHit = null;
+      currentExcerpt = null;
       currentFullStart = null;
       currentFullEnd = null;
       currentFullMsgStart = null;
@@ -1069,6 +1209,7 @@
           });
           currentSearchResultsEls = [...document.querySelectorAll('.searchResult')];
           setSearchResLayout();
+          setPreviewZoneLayout();
           timer.log('front: results to DOM finished');
         }
         timer.logTotal('front: doSearch finished');
@@ -1352,6 +1493,7 @@
       if(excerptEl) {
         document.querySelector('.excerpt.current')?.classList.remove('current');
         excerptEl.classList.add('current');
+        currentExcerpt = excerptEl;
         if(excerptEl.classList.contains('chat')) {
           const msgIndex = parseInt(excerptEl.dataset.msgIndex, 10);
           const charIndex = parseInt(excerptEl.dataset.charIndex, 10);
@@ -1721,6 +1863,19 @@
       }
     }
 
+    function setPreviewZoneLayout() {
+      const currEx = currentExcerpt ? currentExcerpt : document.querySelector('.excerpt');
+      const paddingBottom = main.offsetHeight - previewsEl.offsetHeight - main.scrollTop - 5 - theBar.offsetHeight;
+      if(!currEx) {
+        previewsEl.style.paddingBottom = paddingBottom + 'px';
+        return;
+      }
+      const visibleHeight = previewsEl.clientHeight - paddingBottom;
+      if(visibleHeight > currEx.offsetHeight * 1.5) {
+          previewsEl.style.paddingBottom = paddingBottom + 'px';
+      }
+    }
+
     let scrollTimeout;
 
     main.addEventListener('scroll', () => {
@@ -1731,9 +1886,11 @@
         }, 200)
       }
       setSearchResLayout();
+      setPreviewZoneLayout();
     });
 
     setSearchResLayout();
+    setPreviewZoneLayout();
 
     function scrollCurrentIntoViewWithinResultWrap(wrap, current) {
       if(!wrap || !current) return;

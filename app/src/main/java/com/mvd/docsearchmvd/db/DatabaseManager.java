@@ -167,9 +167,9 @@ public class DatabaseManager {
         long start = System.currentTimeMillis();
         Log.d(WebAppInterface.TAG, "updateFileMetadata");
 
-        if (progressCallback != null) {
-            progressCallback.accept("statusUpdate", new StatusUpdate("Updating metadata (" + entry.file.getName() + ")..."));
-        }
+//        if (progressCallback != null) {
+//            progressCallback.accept("statusUpdate", new StatusUpdate("Updating metadata (" + entry.file.getName() + ")..."));
+//        }
 
         String filePath = entry.getPath();
         long fileSize = entry.size;

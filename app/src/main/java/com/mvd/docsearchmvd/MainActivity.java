@@ -116,7 +116,7 @@ public class MainActivity extends AppCompatActivity {
                 NotificationChannel channel = new NotificationChannel(
                         "index_channel_id",
                         "Indexing Progress",
-                        NotificationManager.IMPORTANCE_LOW
+                        NotificationManager.IMPORTANCE_DEFAULT
                 );
                 NotificationManager manager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
                 manager.createNotificationChannel(channel);

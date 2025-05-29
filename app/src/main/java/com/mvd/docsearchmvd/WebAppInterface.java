@@ -8,6 +8,8 @@ import android.content.*;
 import android.webkit.JavascriptInterface;
 import android.util.Log;
 import android.webkit.WebView;
+import android.os.Handler;
+import android.os.Looper;
 
 import androidx.core.app.NotificationCompat;
 
@@ -228,9 +230,9 @@ public class WebAppInterface {
                     updateNotificationProgress(progress.filesDone, progress.totalFiles, progress.fileName);
                 }
             });
-            db.setProgressCallback((type, payload) -> {
-                sendResultToJS(webView, new ApiResponse<>(type, payload));
-            });
+//            db.setProgressCallback((type, payload) -> {
+//                sendResultToJS(webView, new ApiResponse<>(type, payload));
+//            });
 
             List<String> rawRoots = gson.fromJson(jsonArrayString, new TypeToken<List<String>>(){}.getType());
             List<String> roots = rawRoots.isEmpty() ? db.getAllIndexedFolders() : rawRoots;
@@ -474,9 +476,11 @@ public class WebAppInterface {
                 .setContentTitle(title)
                 .setContentText("Индексация началась…")
                 .setProgress(100, 0, true)
+                .setPriority(NotificationCompat.PRIORITY_DEFAULT)
                 .setOngoing(true)
                 .setOnlyAlertOnce(true);
         notificationManager.notify(NOTIFICATION_ID, notificationBuilder.build());
+        Log.d(TAG, "Start notification: " + title);
     }
 
     private void updateNotificationProgress(int done, int total, String filename) {
@@ -486,6 +490,7 @@ public class WebAppInterface {
                 .setContentText("Файл: " + filename)
                 .setProgress(100, progress, false);
         notificationManager.notify(NOTIFICATION_ID, notificationBuilder.build());
+        Log.d(TAG, "Progress notification: " + filename);
     }
 
     private void finishNotification(String message) {
@@ -495,5 +500,6 @@ public class WebAppInterface {
                 .setProgress(0, 0, false)
                 .setOngoing(false);
         notificationManager.notify(NOTIFICATION_ID, notificationBuilder.build());
+        Log.d(TAG, "Finish notification: " + message);
     }
 }
