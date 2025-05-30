@@ -27,7 +27,8 @@
     --appColor: #7c0023;
     --appColor2: #3700b3;
     --paleBorder: #65667b91;
-    --iconColor:#3e00cb;
+    --iconColor: #3e00cb;
+    --iconSecondaryColor: #8c82a3;
   }
 
   body.night {
@@ -50,7 +51,8 @@
     --theBarDots: #808ba7;
     --errorText: #fff;
     --paleBorder: #f3f3f326;
-    --iconColor:#7c0023;
+    --iconColor: #7c0023;
+    --iconSecondaryColor: #614e53;
   }
 
   ::selection {
@@ -96,22 +98,12 @@
 
   .dangerousButton {
     border: 1px solid #9e0028;
-    border-radius:3px;
+    border-radius: 3px;
   }
 
   #mainInner {
     height: 100%;
     max-height: 100%;
-    box-sizing: border-box;
-    /* padding-top: 10px; */
-  }
-
-  #mainInner>header {
-    padding: 15px 0 0;
-    border-bottom: 1px solid var(--borderNeutral);
-    position: fixed;
-    background: var(--bg);
-    width: 100%;
     box-sizing: border-box;
   }
 
@@ -163,10 +155,10 @@
   }
 
   .icon {
-    background-color:transparent;
-    height:30px;
-    width:30px;
-    padding:0;
+    background-color: transparent;
+    height: 30px;
+    width: 30px;
+    padding: 0;
     border-radius: 0;
     display: flex;
     flex-flow: row nowrap;
@@ -178,22 +170,25 @@
     fill: var(--iconColor);
   }
 
+  .icon_secondary path {
+    fill: var(--iconSecondaryColor);
+  }
+
   .icon svg {
-    display:block;
+    display: block;
     max-width: 100%;
     max-height: 100%;
   }
 
   #menu .icon svg,
-  #manageIndex .icon svg,
-  #searchResultsHeader .icon svg {
-    width:20px;
-    height:20px;
+  #manageIndex .icon svg {
+    width: 20px;
+    height: 20px;
   }
 
   #pathFilter .icon svg {
-    width:23px;
-    height:23px;
+    width: 20px;
+    height: 20px;
   }
 
   .icon.icon_add-folder {
@@ -257,6 +252,12 @@
 
   #searchHeader {
     box-shadow: 0px 7px 7px var(--dropShadow);
+    border-bottom: 1px solid var(--borderNeutral);
+    padding: 15px 0 15px;
+    position: fixed;
+    background: var(--bg);
+    width: 100%;
+    box-sizing: border-box;
   }
 
   #searchWrap {
@@ -264,10 +265,11 @@
   }
 
   #searchButton {
-    width: 55px;
-    height: 35px;
-    background-size: 30px;
+    width: 50px;
+    height: 30px;
     flex: 0 0 auto;
+    box-sizing: border-box;
+    padding: 5px;
   }
 
   #searchQuery {
@@ -279,25 +281,25 @@
 
   #searchResCount {
     font-weight: bold;
-    margin-right:5px;
+    margin-right: 5px;
   }
 
   #searchResultWrap {
     max-height: 56vh;
     overflow: auto;
     box-sizing: border-box;
-    /* margin-top: 92px; */
   }
 
   #searchResultsHeader {
-    padding: 15px 15px 10px;
+    padding: 10px 15px 0;
+    margin-bottom: -5px
   }
 
   #queryInfo {
     white-space: nowrap;
     padding-right: 5px;
     flex: 1 1 auto;
-    font-size:20px;
+    font-size: 17px;
   }
 
   #pathFilter {
@@ -334,8 +336,12 @@
 
   #pathOrderDesc {
     margin-left: 5px;
-    background-size: 18px;
     flex: 0 0 auto;
+  }
+
+  #pathOrderDesc svg {
+    width: 18px;
+    height: 18px;
   }
 
   #searchResult {
@@ -430,7 +436,7 @@
     background: var(--bg);
     border-top: 1px solid var(--iconColor);
   }
-  
+
   #fileName {
     margin: 0;
     padding: 0;
@@ -516,8 +522,7 @@
 
   #menuTrigger {
     width: 45px;
-    height: 35px;
-    background-size: 30px;
+    height: 30px;
     flex: 0 0 auto;
   }
 
@@ -596,14 +601,14 @@
 
   #indexRootsActions h4,
   #indexRootsActions h5 {
-    margin:0;
+    margin: 0;
   }
 
   #indexGlobalActions {
     padding: 15px 0 0;
     border-top: 2px solid var(--iconColor);
   }
-  
+
   #indexedFoldersListContainer {
     overflow: auto;
     flex: 1 0 auto;
@@ -818,20 +823,20 @@
 
   .chat-message .from,
   .excerpt.chat .from {
-    display:inline-block;
-    margin-right:5px;
+    display: inline-block;
+    margin-right: 5px;
     width: 15px;
     text-align: center;
     vertical-align: baseline;
-    opacity:0.6;
+    opacity: 0.6;
   }
 
-  .excerpt.chat .date, 
+  .excerpt.chat .date,
   .chat-message .date {
     font-size: 12px;
-    opacity:0.5;
-    display:inline-block;
-    padding-left:5px;
+    opacity: 0.5;
+    display: inline-block;
+    padding-left: 5px;
     vertical-align: baseline;
   }
 </style>
@@ -844,27 +849,32 @@
           c-44.739,0-86.799-17.422-118.433-49.056C86.413,143.283,73.017,67.17,102.751,3.558c0.446-0.953,0.247-2.083-0.497-2.826
           c-0.744-0.744-1.874-0.942-2.826-0.497C81.267,8.724,64.814,20.274,50.525,34.563C17.943,67.144,0,110.463,0,156.539
           c0,46.076,17.943,89.395,50.524,121.975c32.58,32.582,75.899,50.525,121.976,50.525c46.076,0,89.395-17.943,121.976-50.525
-          c14.29-14.289,25.839-30.743,34.328-48.903C329.249,228.658,329.051,227.529,328.307,226.785z"/>
+          c14.29-14.289,25.839-30.743,34.328-48.903C329.249,228.658,329.051,227.529,328.307,226.785z" />
         <path d="M167.174,159.365c0,0.64,0.244,1.28,0.732,1.768c0.976,0.977,2.56,0.977,3.535,0
           c12.417-12.417,24.907-18.713,37.123-18.713c12.216,0,24.706,6.296,37.123,18.713c0.488,0.488,1.128,0.732,1.768,0.732
           c0.003,0,0.007,0,0.011,0c1.391,0.045,2.509-1.116,2.509-2.5c0-0.785-0.362-1.486-0.928-1.944
           c-24.802-24.918-24.744-49.15,0.176-74.07c0.488-0.488,0.732-1.128,0.732-1.768c0-0.64-0.244-1.28-0.732-1.768
           c-0.976-0.977-2.56-0.977-3.535,0c-12.417,12.416-24.907,18.713-37.123,18.713c-12.216,0-24.706-6.296-37.123-18.713
           c-0.976-0.977-2.56-0.977-3.535,0c-0.488,0.488-0.732,1.128-0.732,1.768c0,0.64,0.244,1.28,0.732,1.768
-          c24.979,24.98,24.979,49.266,0,74.247C167.419,158.085,167.174,158.725,167.174,159.365z"/>
-      </svg>      
+          c24.979,24.98,24.979,49.266,0,74.247C167.419,158.085,167.174,158.725,167.174,159.365z" />
+      </svg>
     </button>
     <button class="icon" id="toggleIndexView" onclick="toggleModalView('#manageIndex')">
       <svg viewBox="0 0 16 16">
-        <path d="M13.1371 6.91018C13.4184 6.7695 13.7123 6.59981 14 6.40001V8C14 9.65685 11.3137 11 8 11C4.68629 11 2 9.65685 2 8V6.40001C2.28772 6.59981 2.58158 6.7695 2.86293 6.91018C4.28096 7.61919 6.09998 8 8 8C9.90002 8 11.719 7.61919 13.1371 6.91018Z"/>
-        <path d="M2 11.4V13C2 14.6569 4.68629 16 8 16C11.3137 16 14 14.6569 14 13V11.4C13.7123 11.5998 13.4184 11.7695 13.1371 11.9102C11.719 12.6192 9.90002 13 8 13C6.09998 13 4.28096 12.6192 2.86293 11.9102C2.58158 11.7695 2.28772 11.5998 2 11.4Z"/>
-        <path d="M8 0C11.3137 0 14 1.34315 14 3C14 4.65685 11.3137 6 8 6C4.68629 6 2 4.65685 2 3C2 1.34315 4.68629 0 8 0Z"/>
-      </svg>      
+        <path
+          d="M13.1371 6.91018C13.4184 6.7695 13.7123 6.59981 14 6.40001V8C14 9.65685 11.3137 11 8 11C4.68629 11 2 9.65685 2 8V6.40001C2.28772 6.59981 2.58158 6.7695 2.86293 6.91018C4.28096 7.61919 6.09998 8 8 8C9.90002 8 11.719 7.61919 13.1371 6.91018Z" />
+        <path
+          d="M2 11.4V13C2 14.6569 4.68629 16 8 16C11.3137 16 14 14.6569 14 13V11.4C13.7123 11.5998 13.4184 11.7695 13.1371 11.9102C11.719 12.6192 9.90002 13 8 13C6.09998 13 4.28096 12.6192 2.86293 11.9102C2.58158 11.7695 2.28772 11.5998 2 11.4Z" />
+        <path
+          d="M8 0C11.3137 0 14 1.34315 14 3C14 4.65685 11.3137 6 8 6C4.68629 6 2 4.65685 2 3C2 1.34315 4.68629 0 8 0Z" />
+      </svg>
     </button>
     <button class="icon" id="togglePrefs" onclick="toggleModalView('#prefs')">
       <svg viewBox="0 0 1920 1920">
-          <path d="M1703.534 960c0-41.788-3.84-84.48-11.633-127.172l210.184-182.174-199.454-340.856-265.186 88.433c-66.974-55.567-143.323-99.389-223.85-128.415L1158.932 0h-397.78L706.49 269.704c-81.43 29.138-156.423 72.282-223.962 128.414l-265.073-88.32L18 650.654l210.184 182.174C220.39 875.52 216.55 918.212 216.55 960s3.84 84.48 11.633 127.172L18 1269.346l199.454 340.856 265.186-88.433c66.974 55.567 143.322 99.389 223.85 128.415L761.152 1920h397.779l54.663-269.704c81.318-29.138 156.424-72.282 223.963-128.414l265.073 88.433 199.454-340.856-210.184-182.174c7.793-42.805 11.633-85.497 11.633-127.285m-743.492 395.294c-217.976 0-395.294-177.318-395.294-395.294 0-217.976 177.318-395.294 395.294-395.294 217.977 0 395.294 177.318 395.294 395.294 0 217.976-177.317 395.294-395.294 395.294" fill-rule="evenodd"/>
-      </svg>      
+        <path
+          d="M1703.534 960c0-41.788-3.84-84.48-11.633-127.172l210.184-182.174-199.454-340.856-265.186 88.433c-66.974-55.567-143.323-99.389-223.85-128.415L1158.932 0h-397.78L706.49 269.704c-81.43 29.138-156.423 72.282-223.962 128.414l-265.073-88.32L18 650.654l210.184 182.174C220.39 875.52 216.55 918.212 216.55 960s3.84 84.48 11.633 127.172L18 1269.346l199.454 340.856 265.186-88.433c66.974 55.567 143.322 99.389 223.85 128.415L761.152 1920h397.779l54.663-269.704c81.318-29.138 156.424-72.282 223.963-128.414l265.073 88.433 199.454-340.856-210.184-182.174c7.793-42.805 11.633-85.497 11.633-127.285m-743.492 395.294c-217.976 0-395.294-177.318-395.294-395.294 0-217.976 177.318-395.294 395.294-395.294 217.977 0 395.294 177.318 395.294 395.294 0 217.976-177.317 395.294-395.294 395.294"
+          fill-rule="evenodd" />
+      </svg>
     </button>
   </div>
   <div id="spinnerGlobal" class="hidden">
@@ -883,15 +893,17 @@
     <div id="indexRootsActions" class="centered colFlexContainer justified">
       <button class="icon" onclick="Android.selectFolder()">
         <svg viewBox="0 0 16 16">
-          <path d="M0 1H5L8 3H13V5H3.7457L2.03141 11H4.11144L5.2543 7H16L14 14H0V1Z"/>
+          <path d="M0 1H5L8 3H13V5H3.7457L2.03141 11H4.11144L5.2543 7H16L14 14H0V1Z" />
         </svg>
       </button>
       <h4 id="indexedFoldersListTitle" class="hidden"></h4>
       <button id="deleteIndexesForFolders" class="hidden icon" onClick="deleteIndexForSelectedFolders()">
         <svg viewBox="0 0 24 24">
-          <path d="M8 1.5V2.5H3C2.44772 2.5 2 2.94772 2 3.5V4.5C2 5.05228 2.44772 5.5 3 5.5H21C21.5523 5.5 22 5.05228 22 4.5V3.5C22 2.94772 21.5523 2.5 21 2.5H16V1.5C16 0.947715 15.5523 0.5 15 0.5H9C8.44772 0.5 8 0.947715 8 1.5Z"/>
-          <path d="M3.9231 7.5H20.0767L19.1344 20.2216C19.0183 21.7882 17.7135 23 16.1426 23H7.85724C6.28636 23 4.98148 21.7882 4.86544 20.2216L3.9231 7.5Z"/>
-        </svg>        
+          <path
+            d="M8 1.5V2.5H3C2.44772 2.5 2 2.94772 2 3.5V4.5C2 5.05228 2.44772 5.5 3 5.5H21C21.5523 5.5 22 5.05228 22 4.5V3.5C22 2.94772 21.5523 2.5 21 2.5H16V1.5C16 0.947715 15.5523 0.5 15 0.5H9C8.44772 0.5 8 0.947715 8 1.5Z" />
+          <path
+            d="M3.9231 7.5H20.0767L19.1344 20.2216C19.0183 21.7882 17.7135 23 16.1426 23H7.85724C6.28636 23 4.98148 21.7882 4.86544 20.2216L3.9231 7.5Z" />
+        </svg>
       </button>
     </div>
     <div id="indexResultContainer" class="rowFlexContainer">
@@ -919,42 +931,48 @@
   </div>
   <main>
     <div id="mainInner">
-      <header id="searchHeader" class="minimalRow">
+      <header id="searchHeader">
         <div class="colFlexContainer justified">
           <div id="menuTrigger" class="minimalCol icon">
             <svg viewBox="0 0 24 24">
-              <path d="M7 12C7 13.1046 6.10457 14 5 14C3.89543 14 3 13.1046 3 12C3 10.8954 3.89543 10 5 10C6.10457 10 7 10.8954 7 12Z"/>
-              <path d="M21 12C21 13.1046 20.1046 14 19 14C17.8954 14 17 13.1046 17 12C17 10.8954 17.8954 10 19 10C20.1046 10 21 10.8954 21 12Z"/>
-              <path d="M14 12C14 13.1046 13.1046 14 12 14C10.8954 14 10 13.1046 10 12C10 10.8954 10.8954 10 12 10C13.1046 10 14 10.8954 14 12Z"/>
+              <path
+                d="M7 12C7 13.1046 6.10457 14 5 14C3.89543 14 3 13.1046 3 12C3 10.8954 3.89543 10 5 10C6.10457 10 7 10.8954 7 12Z" />
+              <path
+                d="M21 12C21 13.1046 20.1046 14 19 14C17.8954 14 17 13.1046 17 12C17 10.8954 17.8954 10 19 10C20.1046 10 21 10.8954 21 12Z" />
+              <path
+                d="M14 12C14 13.1046 13.1046 14 12 14C10.8954 14 10 13.1046 10 12C10 10.8954 10.8954 10 12 10C13.1046 10 14 10.8954 14 12Z" />
             </svg>
           </div>
           <div id="searchWrap">
             <input type="search" autocomplete="off" id="searchQuery" oninput="validateQuery(this)">
           </div>
           <button id="searchButton" class="minimalCol icon" onclick="doSearch()">
-            <svg viewBox="0 0 24 24">
-              <path fill-rule="evenodd" clip-rule="evenodd" d="M2 12C2 6.47715 6.47715 2 12 2C17.5228 2 22 6.47715 22 12C22 17.5228 17.5228 22 12 22C6.47715 22 2 17.5228 2 12ZM9 11.5C9 10.1193 10.1193 9 11.5 9C12.8807 9 14 10.1193 14 11.5C14 12.8807 12.8807 14 11.5 14C10.1193 14 9 12.8807 9 11.5ZM11.5 7C9.01472 7 7 9.01472 7 11.5C7 13.9853 9.01472 16 11.5 16C12.3805 16 13.202 15.7471 13.8957 15.31L15.2929 16.7071C15.6834 17.0976 16.3166 17.0976 16.7071 16.7071C17.0976 16.3166 17.0976 15.6834 16.7071 15.2929L15.31 13.8957C15.7471 13.202 16 12.3805 16 11.5C16 9.01472 13.9853 7 11.5 7Z"/>
-            </svg>            
+            <svg viewBox="0 0 16 16">
+              <path
+                d="M12.027 9.92L16 13.95 14 16l-4.075-3.976A6.465 6.465 0 0 1 6.5 13C2.91 13 0 10.083 0 6.5 0 2.91 2.917 0 6.5 0 10.09 0 13 2.917 13 6.5a6.463 6.463 0 0 1-.973 3.42zM1.997 6.452c0 2.48 2.014 4.5 4.5 4.5 2.48 0 4.5-2.015 4.5-4.5 0-2.48-2.015-4.5-4.5-4.5-2.48 0-4.5 2.014-4.5 4.5z"
+                fill-rule="evenodd" />
+            </svg>
           </button>
         </div>
         <input type="hidden" id="currentSearchQuery">
         <div id="queryValidationMessage" class="hidden">Поиск не поддерживает пробелы, знаки препинания и эмодзи</div>
-        <div id="searchResultsHeader" class="colFlexContainer justified centered">
+        <div id="searchResultsHeader" class="colFlexContainer justified centered hidden">
           <span id="queryInfo">
             <strong id="searchResQuery"></strong> : <span id="searchResCount"></span>
           </span>
           <span id="pathFilter" class="colFlexContainer centered">
             <input type="search" id="pathFilterInput">
-            <button class="button_small icon" onclick="togglePathFilter()">
+            <button class="button_small icon icon_secondary" onclick="togglePathFilter()">
               <svg viewBox="0 0 24 24">
-                <path d="M20.17 3.91C20.1062 3.78712 20.0101 3.68399 19.8921 3.61173C19.774 3.53947 19.6384 3.50084 19.5 3.5H4.5C4.36157 3.50084 4.226 3.53947 4.10792 3.61173C3.98984 3.68399 3.89375 3.78712 3.83 3.91C3.76636 4.03323 3.73915 4.17204 3.75155 4.31018C3.76395 4.44832 3.81544 4.58007 3.9 4.69L9.25 12V19.75C9.25259 19.9481 9.33244 20.1374 9.47253 20.2775C9.61263 20.4176 9.80189 20.4974 10 20.5H14C14.1981 20.4974 14.3874 20.4176 14.5275 20.2775C14.6676 20.1374 14.7474 19.9481 14.75 19.75V12L20.1 4.69C20.1846 4.58007 20.236 4.44832 20.2484 4.31018C20.2608 4.17204 20.2336 4.03323 20.17 3.91Z"/>
-              </svg>              
+                <path
+                  d="M20.17 3.91C20.1062 3.78712 20.0101 3.68399 19.8921 3.61173C19.774 3.53947 19.6384 3.50084 19.5 3.5H4.5C4.36157 3.50084 4.226 3.53947 4.10792 3.61173C3.98984 3.68399 3.89375 3.78712 3.83 3.91C3.76636 4.03323 3.73915 4.17204 3.75155 4.31018C3.76395 4.44832 3.81544 4.58007 3.9 4.69L9.25 12V19.75C9.25259 19.9481 9.33244 20.1374 9.47253 20.2775C9.61263 20.4176 9.80189 20.4974 10 20.5H14C14.1981 20.4974 14.3874 20.4176 14.5275 20.2775C14.6676 20.1374 14.7474 19.9481 14.75 19.75V12L20.1 4.69C20.1846 4.58007 20.236 4.44832 20.2484 4.31018C20.2608 4.17204 20.2336 4.03323 20.17 3.91Z" />
+              </svg>
             </button>
           </span>
-          <button id="pathOrderDesc" class="button_small icon" onclick="reorderSearchResults()">
+          <button id="pathOrderDesc" class="button_small icon icon_secondary" onclick="reorderSearchResults()">
             <svg viewBox="0 0 16 16">
-              <path d="M8 0L2 6V7H14V6L8 0Z"/>
-              <path d="M8 16L2 10V9H14V10L8 16Z"/>
+              <path d="M8 0L2 6V7H14V6L8 0Z" />
+              <path d="M8 16L2 10V9H14V10L8 16Z" />
             </svg>
           </button>
           <button id="showSearchLog" class="button_small hidden" onclick="showLog()">?</button>
@@ -998,6 +1016,7 @@
     const searchQueryEl = document.getElementById('searchQuery');
     const currentSearchQueryInput = document.getElementById('currentSearchQuery');
     const searchResultEl = document.getElementById('searchResult');
+    const searchResultsHeader = document.getElementById('searchResultsHeader');
     const previewsEl = document.getElementById('previews');
     const excerptsOuter = document.getElementById('excerptsOuter');
     const excerptsContainer = document.getElementById('excerpts');
@@ -1026,7 +1045,7 @@
     const searchLogWrap = document.getElementById('searchLogWrap');
     const allowedExtensions = document.getElementById('allowedExtensions');
     const suggestionList = document.getElementById('suggestionList');
-    const mainHeader = document.querySelector('#mainInner > header');
+    const searchHeader = document.querySelector('#searchHeader');
     const searchResultWrap = document.getElementById('searchResultWrap');
     const indexedFoldersListTitle = document.getElementById('indexedFoldersListTitle');
     const pathFilter = document.getElementById('pathFilter');
@@ -1142,13 +1161,7 @@
       }
     });
 
-    function doSearch() {
-      if(!searchQueryEl.value.trim()) return;
-      if(containsDisallowedCharacters(searchQueryEl.value.trim())) {
-        toggleQueryValidationMessage(true);
-        currentSearchQueryInput.value = '';
-        return;
-      }
+    function resetSearchState() {
       excerptsContainer.innerHTML = '';
       fullPreviewEl.innerHTML = '';
       searchResultEl.innerHTML = '';
@@ -1163,12 +1176,27 @@
       currentFullMsgStart = null;
       currentFullMsgEnd = null;
       currentChatMessages = null;
-      const timer = createLogTimer('WebClient', false);
-      timer.log('front: doSearch started');
+      if(pathFilter.classList.contains('expanded')) {
+        togglePathFilter();
+      }
       previewsEl.scroll({
         left: 0,
         behavior: 'smooth'
       })
+    }
+
+    function doSearch() {
+      if(!searchQueryEl.value.trim()) return;
+      if(containsDisallowedCharacters(searchQueryEl.value.trim())) {
+        toggleQueryValidationMessage(true);
+        currentSearchQueryInput.value = '';
+        return;
+      }
+      const timer = createLogTimer('WebClient', false);
+      timer.log('front: doSearch started');
+
+      resetSearchState();
+
       currentSearchQueryInput.value = searchQueryEl.value.trim();
 
       saveSearchQuery(currentSearchQueryInput.value);
@@ -1184,6 +1212,7 @@
         if(res.error) {
           searchResultEl.innerHTML = res.error + '<br>' + res.errorDetails;;
         } else {
+          searchResultsHeader.classList.remove('hidden');
           const parsed = res.data;
           searchResCount.textContent = parsed.length;
           searchResQuery.textContent = currentSearchQueryInput.value;
@@ -1749,13 +1778,11 @@
 
     function toggleNightMode() {
       const isNight = document.body.classList.toggle('night');
-      console.log('front: isNight? ' + isNight);
       localStorage.setItem("nightMode", isNight ? "on" : "off");
       toggleMenu();
     }
 
     const isNight = localStorage.getItem("nightMode") && localStorage.getItem("nightMode") === 'on';
-    console.log('front: got nightMode from localStorage: ' + isNight)
     if(isNight) {
       document.body.classList.add("night");
     }
@@ -1852,7 +1879,7 @@
 
     function setSearchResLayout() {
       const sr = currentHit ? currentHit : document.querySelector('.searchResult');
-      const paddingTop = mainHeader.offsetHeight + main.scrollTop;
+      const paddingTop = searchHeader.offsetHeight + main.scrollTop;
       if(!sr) {
         searchResultWrap.style.paddingTop = paddingTop + 'px';
         return;
@@ -1865,14 +1892,14 @@
 
     function setPreviewZoneLayout() {
       const currEx = currentExcerpt ? currentExcerpt : document.querySelector('.excerpt');
-      const paddingBottom = main.offsetHeight - previewsEl.offsetHeight - main.scrollTop - 5 - theBar.offsetHeight;
+      const paddingBottom = main.scrollHeight - main.clientHeight - main.scrollTop;
       if(!currEx) {
         previewsEl.style.paddingBottom = paddingBottom + 'px';
         return;
       }
       const visibleHeight = previewsEl.clientHeight - paddingBottom;
       if(visibleHeight > currEx.offsetHeight * 1.5) {
-          previewsEl.style.paddingBottom = paddingBottom + 'px';
+        previewsEl.style.paddingBottom = paddingBottom + 'px';
       }
     }
 
@@ -1880,11 +1907,12 @@
 
     main.addEventListener('scroll', () => {
       clearTimeout(scrollTimeout);
-      if(currentHit) {
-        setTimeout(() => {
-          scrollCurrentIntoViewWithinResultWrap(searchResultWrap, currentHit);
-        }, 200)
-      }
+
+      scrollTimeout = setTimeout(() => {
+        scrollCurrentIntoViewWithinResultWrap(searchResultWrap, currentHit);
+        scrollCurrentExcerptIntoView(excerptsOuter, currentExcerpt);
+      }, 200);
+
       setSearchResLayout();
       setPreviewZoneLayout();
     });
@@ -1892,7 +1920,39 @@
     setSearchResLayout();
     setPreviewZoneLayout();
 
-    function scrollCurrentIntoViewWithinResultWrap(wrap, current) {
+    function scrollCurrentExcerptIntoView() {
+      const outer = excerptsOuter;
+      const current = currentExcerpt;
+
+      if (!outer || !current) return;
+
+      const outerRect = outer.getBoundingClientRect();
+      const currentRect = current.getBoundingClientRect();
+
+      const margin = 15; // запас сверху и снизу
+
+      const currentTopWithin = currentRect.top - outerRect.top;
+      const currentBottomWithin = currentRect.bottom - outerRect.top;
+
+      const visibleTop = outer.scrollTop;
+      const visibleBottom = visibleTop + outer.clientHeight;
+
+      const currentTop = visibleTop + currentTopWithin;
+      const currentBottom = visibleTop + currentBottomWithin;
+
+      // Если верх current выше видимой области
+      if (currentTop < visibleTop + margin) {
+        outer.scrollTop = currentTop - margin;
+      }
+      // Если низ current ниже видимой области
+      else if (currentBottom > visibleBottom - margin) {
+        outer.scrollTop = currentBottom - outer.clientHeight + margin;
+      }
+    }
+
+    function scrollCurrentIntoViewWithinResultWrap() {
+      const wrap = searchResultWrap;
+      const current = currentHit;
       if(!wrap || !current) return;
       const margin = 15;
 
@@ -1976,13 +2036,13 @@
           scrollIntentCount = 0;
           loadCooldown = true;
           if(atBottom) {
-            if (currentChatMessages !== null) {
+            if(currentChatMessages !== null) {
               appendChunkForJson(true);
             } else {
               appendChunk(true);
             }
           } else if(atTop) {
-            if (currentChatMessages !== null) {
+            if(currentChatMessages !== null) {
               appendChunkForJson(false);
             } else {
               appendChunk(false);
@@ -2092,6 +2152,10 @@
       } else {
         main.classList.add('preventScroll');
       }
+    }, {passive: true});
+
+    document.addEventListener('touchend', function (e) {
+      main.classList.remove('preventScroll');
     }, {passive: true});
 
     document.addEventListener('click', (e) => {
