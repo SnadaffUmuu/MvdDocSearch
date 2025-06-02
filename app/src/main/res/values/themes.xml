@@ -6,7 +6,8 @@
         <item name="colorPrimaryVariant">@color/purple_700</item>
         <item name="colorOnPrimary">@color/white</item>
         <!-- Secondary brand color. -->
-        <item name="colorSecondary">@color/mvd_search</item>
+<!--        <item name="colorSecondary">@color/mvd_search</item>-->
+        <item name="colorSecondary">@color/mvd_neutral</item>
         <item name="colorSecondaryVariant">@color/mvd_search</item>
         <item name="colorOnSecondary">@color/black</item>
         <!-- Status bar color. -->

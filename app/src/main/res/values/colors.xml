@@ -8,6 +8,7 @@
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
     <color name="mvd_search">#FF7C0023</color>
+    <color name="mvd_neutral">#FF625c64</color>
     <color name="mvd_primary">#FF828aff</color>
     <color name="mvd_text_highlight">#80828aff</color>
     <color name="mvd_primary_night">#FF2a51b7</color>

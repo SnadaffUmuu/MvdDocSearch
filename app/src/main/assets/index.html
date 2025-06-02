@@ -29,6 +29,7 @@
     --paleBorder: #65667b91;
     --iconColor: #3e00cb;
     --iconSecondaryColor: #8c82a3;
+    --textSelectionBg: #76687b57;
   }
 
   body.night {
@@ -53,10 +54,11 @@
     --paleBorder: #f3f3f326;
     --iconColor: #7c0023;
     --iconSecondaryColor: #614e53;
+    --textSelectionBg: #84858d59;
   }
 
   ::selection {
-    background: #8d91c270;
+    background: var(--textSelectionBg);
   }
 
   html,
@@ -828,7 +830,12 @@
     width: 15px;
     text-align: center;
     vertical-align: baseline;
-    opacity: 0.6;
+    opacity: 0.3;
+  }
+
+  .night .chat-message .from,
+  .night .excerpt.chat .from {
+    opacity: 0.5;
   }
 
   .excerpt.chat .date,
@@ -1109,7 +1116,7 @@
         li.textContent = query;
         li.onclick = () => {
           searchQuery.value = query;
-          suggestionList.classList.add('hidden');
+          doSearch();
         };
         suggestionList.appendChild(li);
       });
@@ -1161,6 +1168,12 @@
       }
     });
 
+    searchQuery.addEventListener('keyup', (e) => {
+      if(e.keyCode === 13) {
+        doSearch();
+      }
+    })
+
     function resetSearchState() {
       excerptsContainer.innerHTML = '';
       fullPreviewEl.innerHTML = '';
@@ -1168,6 +1181,7 @@
       searchResult.innerHTML = '';
       searchResCount.innerHTML = '';
       showSearchLog.classList.add('hidden');
+      suggestionList.classList.add('hidden');
       searchLog.innerHTML = '';
       currentHit = null;
       currentExcerpt = null;
@@ -1205,6 +1219,7 @@
 
       setTimeout(() => {
         timer.log('front: calling Android.doSearch');
+        searchResultsHeader.classList.remove('hidden');
 
         const data = Android.doSearch(searchQueryEl.value.trim());
 
@@ -1212,7 +1227,6 @@
         if(res.error) {
           searchResultEl.innerHTML = res.error + '<br>' + res.errorDetails;;
         } else {
-          searchResultsHeader.classList.remove('hidden');
           const parsed = res.data;
           searchResCount.textContent = parsed.length;
           searchResQuery.textContent = currentSearchQueryInput.value;
@@ -1239,7 +1253,6 @@
           currentSearchResultsEls = [...document.querySelectorAll('.searchResult')];
           setSearchResLayout();
           setPreviewZoneLayout();
-          timer.log('front: results to DOM finished');
         }
         timer.logTotal('front: doSearch finished');
       }, 0);
@@ -1334,6 +1347,7 @@
 
         excerptsContainer.innerHTML = excerpts.join('');
         excerptsContainer.style.display = '';
+        setPreviewZoneLayout();
         prevChunk.classList.add('hidden');
       } else {
         console.error('front: getFileContent error:', response.error);
@@ -1778,6 +1792,7 @@
 
     function toggleNightMode() {
       const isNight = document.body.classList.toggle('night');
+      Android.setDarkMode(isNight);
       localStorage.setItem("nightMode", isNight ? "on" : "off");
       toggleMenu();
     }
@@ -1785,6 +1800,7 @@
     const isNight = localStorage.getItem("nightMode") && localStorage.getItem("nightMode") === 'on';
     if(isNight) {
       document.body.classList.add("night");
+      Android.setDarkMode(true);
     }
 
     function resetProgressBar() {
@@ -1878,16 +1894,8 @@
     }
 
     function setSearchResLayout() {
-      const sr = currentHit ? currentHit : document.querySelector('.searchResult');
       const paddingTop = searchHeader.offsetHeight + main.scrollTop;
-      if(!sr) {
-        searchResultWrap.style.paddingTop = paddingTop + 'px';
-        return;
-      }
-      const visibleHeight = searchResultWrap.clientHeight - paddingTop;
-      if(visibleHeight > sr.offsetHeight * 2) {
-        searchResultWrap.style.paddingTop = paddingTop + 'px';
-      }
+      searchResultWrap.style.paddingTop = paddingTop + 'px';
     }
 
     function setPreviewZoneLayout() {
@@ -1924,7 +1932,7 @@
       const outer = excerptsOuter;
       const current = currentExcerpt;
 
-      if (!outer || !current) return;
+      if(!outer || !current) return;
 
       const outerRect = outer.getBoundingClientRect();
       const currentRect = current.getBoundingClientRect();
@@ -1941,11 +1949,11 @@
       const currentBottom = visibleTop + currentBottomWithin;
 
       // Если верх current выше видимой области
-      if (currentTop < visibleTop + margin) {
+      if(currentTop < visibleTop + margin) {
         outer.scrollTop = currentTop - margin;
       }
       // Если низ current ниже видимой области
-      else if (currentBottom > visibleBottom - margin) {
+      else if(currentBottom > visibleBottom - margin) {
         outer.scrollTop = currentBottom - outer.clientHeight + margin;
       }
     }
@@ -1997,6 +2005,8 @@
       } else {
         currentSearchResultsEls.forEach(el => el.style.display = '');
       }
+      setSearchResLayout();
+      setPreviewZoneLayout();
     });
 
     let startTouchY = 0;

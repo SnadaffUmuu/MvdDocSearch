@@ -3,6 +3,7 @@ package com.mvd.docsearchmvd;
 import static com.mvd.docsearchmvd.util.Util.getStackTrace;
 import static com.mvd.docsearchmvd.util.Util.sendResultToJS;
 
+import android.app.Activity;
 import android.app.NotificationManager;
 import android.content.*;
 import android.webkit.JavascriptInterface;
@@ -12,6 +13,7 @@ import android.os.Handler;
 import android.os.Looper;
 
 import androidx.core.app.NotificationCompat;
+import androidx.core.content.ContextCompat;
 
 import com.google.gson.reflect.TypeToken;
 import com.mvd.docsearchmvd.db.DatabaseManager;
@@ -467,6 +469,18 @@ public class WebAppInterface {
     @JavascriptInterface
     public void saveExcludedPaths(String csv) {
         settingsManager.saveExcludedPaths(csv);
+    }
+
+    @JavascriptInterface
+    public void setDarkMode(boolean turnOn) {
+        Log.d(WebAppInterface.TAG, "setDarkMode called: " + turnOn);
+        Activity activity = (Activity) context;
+        activity.runOnUiThread(() -> {
+            int colorRes = turnOn ? R.color.mvd_search : R.color.purple_700;
+            int color = ContextCompat.getColor(activity, colorRes);
+            Log.d(WebAppInterface.TAG, "setting status bar color...");
+            activity.getWindow().setStatusBarColor(color);
+        });
     }
 
     private void startNotification(String title) {
