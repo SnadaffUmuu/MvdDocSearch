@@ -321,7 +321,7 @@ public class DatabaseManager {
         stmt.executeInsert();
     }
 
-    public void deleteIndexForPath (String prefix) {
+    public void deleteIndexForPath (String prefix, boolean keepRoot) {
         Log.d(WebAppInterface.TAG, "deleteIndexForPath called for folder: " + prefix);
         long startDeleting = System.currentTimeMillis();
         String safePrefix = prefix
@@ -345,17 +345,19 @@ public class DatabaseManager {
             Log.d(WebAppInterface.TAG, "Удалено из files: " + deletedFiles + " строк");
             Profiler.get("files").record(System.currentTimeMillis() - filesTT);
 
-            long foldersTT = System.currentTimeMillis();
-            int deletedFolders = db.delete(
-                    "indexed_folders",
-                    "path = ?",
-                    new String[]{prefix}
-            );
-            if (statCallback != null) {
-                statCallback.accept("num of deleted roots", deletedFolders);
+            if (!keepRoot) {
+                long foldersTT = System.currentTimeMillis();
+                int deletedFolders = db.delete(
+                        "indexed_folders",
+                        "path = ?",
+                        new String[]{prefix}
+                );
+                if (statCallback != null) {
+                    statCallback.accept("num of deleted roots", deletedFolders);
+                }
+                Log.d(WebAppInterface.TAG, "Удалено из indexed_folders: " + deletedFolders + " строк");
+                Profiler.get("folders").record(System.currentTimeMillis() - foldersTT);
             }
-            Log.d(WebAppInterface.TAG, "Удалено из indexed_folders: " + deletedFolders + " строк");
-            Profiler.get("folders").record(System.currentTimeMillis() - foldersTT);
             Profiler.get("deleting").record(System.currentTimeMillis() - startDeleting);
         } finally {
             if (cursor != null) cursor.close();

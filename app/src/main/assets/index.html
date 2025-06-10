@@ -193,43 +193,6 @@
     height: 20px;
   }
 
-  .icon.icon_add-folder {
-    background-image: url(img/add-folder.svg);
-  }
-
-  .icon.icon_database {
-    background-image: url(img/database.svg);
-  }
-
-  /* .icon.icon_dots {
-    background-image: url(img/dots.svg);
-    transform: rotate(90deg);
-  } */
-
-  .icon.icon_night {
-    background-image: url(img/night.svg);
-  }
-
-  .icon.icon_settings {
-    background-image: url(img/settings.svg);
-  }
-
-  .icon.icon_trash {
-    background-image: url(img/trash.svg);
-  }
-
-  .icon.icon_sort {
-    background-image: url(img/sort.svg);
-  }
-
-  .icon.icon_filter {
-    background-image: url(img/filter.svg);
-  }
-
-  /* .icon.icon_search {
-    background-image: url(img/search.svg);
-  } */
-
   input[type="text"],
   input[type="search"],
   textarea {
@@ -1070,7 +1033,7 @@
     const allowedOverflowFactor = 1.2;
 
     function saveSearchQuery(query) {
-      const keepCount = 10;
+      const keepCount = 30;
       if(!query || typeof query !== 'string') return;
       let recent = getRecentSearches();
       recent = recent.filter(item => item !== query);
@@ -1678,10 +1641,12 @@
     }
 
     function rebuildIndex() {
-      if(confirm("Точно перестроить заново весь индекс?")) {
+      const selectedPaths = [...indexedFoldersListEl.querySelectorAll('[type="checkbox"]:checked')].map(el => el.value);
+      const message = selectedPaths.length ? "Точно перестроить индекс выбранных ресурсов?" 
+        : "Точно перестроить заново весь индекс?";
+      if(confirm(message)) {
         toggleSpinner(true);
         setTimeout(() => {
-          const selectedPaths = [...indexedFoldersListEl.querySelectorAll('[type="checkbox"]:checked')].map(el => el.value);
           Android.rebuildIndex(JSON.stringify(selectedPaths))
         }, 0);
       }
@@ -1992,8 +1957,14 @@
         pathFilterInput.value = '';
         pathFilterInput.dispatchEvent(new Event('input'));
         currentSearchResultsEls.forEach(el => el.style.display = '');
+        setSearchResLayout();
+        setPreviewZoneLayout();
       } else {
-        pathFilterInput.focus();
+        pathFilterInput.value = 'vocab';
+        pathFilterInput.dispatchEvent(new Event('input'));
+        //pathFilterInput.focus();
+        setSearchResLayout();
+        setPreviewZoneLayout();
       }
     }
 

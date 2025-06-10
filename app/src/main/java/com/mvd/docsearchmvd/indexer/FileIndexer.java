@@ -190,6 +190,7 @@ public class FileIndexer {
                     formatElapsed(System.currentTimeMillis() - startTime));
         }
         handler.removeCallbacks(uiUpdater);
+        uiUpdater.run();
 
         LogTimer orphans = new LogTimer(true);
         db.deleteOrphanTerms();
@@ -222,7 +223,7 @@ public class FileIndexer {
             if (db.rootExists(root) && (root == null || !root.exists())) {
                 Log.d(WebAppInterface.TAG, "root folder:" + root.getAbsolutePath() + " есть в базе, но нет на диске, удаляем из базы");
 //                long start = System.currentTimeMillis();
-                db.deleteIndexForPath(root.getAbsolutePath());
+                db.deleteIndexForPath(root.getAbsolutePath(), false);
 //                deleting.record(System.currentTimeMillis() - start);
             } else if (!db.rootExists(root)) {
                 Log.d(WebAppInterface.TAG, "root folder:" + root.getAbsolutePath() + " нет в базе, но есть на диске, добавляет в бд");

@@ -143,7 +143,7 @@ public class WebAppInterface {
             try {
                 for (String path : paths) {
                     LogTimer fileIndexDeleteTimer = new LogTimer(false);
-                    db.deleteIndexForPath(path);
+                    db.deleteIndexForPath(path, false);
                     sendResultToJS(webView, new ApiResponse<>("statusUpdate", new StatusUpdate("Deleted for path "
                             + path, fileIndexDeleteTimer.getElapsed())));
                 }
@@ -364,6 +364,14 @@ public class WebAppInterface {
                 try {
                     sendResultToJS(webView, new ApiResponse<>("statusUpdate",
                             new StatusUpdate("\uD83D\uDD01 Rebuilding started (" + roots.size() + " root folders)")));
+                    db.setProgressCallback((type, payload) -> {
+                        sendResultToJS(webView, new ApiResponse<>(type, payload));
+                    });
+                    Map<String, Integer> stats = new HashMap<>();
+                    db.setStatCallback((type, num) -> {
+                        stats.merge(type, (Integer) num, Integer::sum);
+                    });
+
                     db.getConnection().beginTransaction();
                     startNotification("Rebuilding");
                     LogTimer clearTablesTimer = new LogTimer(true);
@@ -372,7 +380,33 @@ public class WebAppInterface {
                             new StatusUpdate("Clearing tables...")));
                     Log.d(WebAppInterface.TAG, "Deleting indexes before rebuilding index");
 
-                    db.clearTables(true);
+                    if (folders.length > 0) {
+                        for (File file : folders) {
+                            LogTimer fileIndexDeleteTimer = new LogTimer(false);
+
+                            db.deleteIndexForPath(file.getAbsolutePath(), true);
+
+                            sendResultToJS(webView, new ApiResponse<>("statusUpdate", new StatusUpdate("Deleted for path "
+                                    + file.getAbsolutePath(), fileIndexDeleteTimer.getElapsed())));
+                        }
+                        LogTimer orphans = new LogTimer(true);
+
+                        db.deleteOrphanTerms();
+
+                        String orphansS = "<br>- deleting orphan terms: " + orphans.getElapsed();
+                        String message = "Deleting summary:";
+                        for(String metric : stats.keySet()) {
+                            message += "<br>- " + metric + ": " + stats.get(metric);
+                        }
+                        message += "<br>- avg TOTAL root delete time: " + Profiler.get("deleting").getAverage()
+                                + "<br>- avg FILES del time: " + Profiler.get("files").getAverage()
+                                + "<br>- avg FOLDERS del time: " + Profiler.get("folders").getAverage()
+                                + orphansS;
+                        Profiler.clear();
+                        sendResultToJS(webView, new ApiResponse<>("statusUpdate", new StatusUpdate(message)));
+                    } else {
+                        db.clearTables(true);
+                    }
 
                     sendResultToJS(webView, new ApiResponse<>("statusUpdate",
                             new StatusUpdate("Tables cleared", clearTablesTimer.getElapsed())));
