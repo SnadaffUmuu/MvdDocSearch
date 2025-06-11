@@ -1956,25 +1956,26 @@
       if(!pathFilter.classList.contains('expanded')) {
         pathFilterInput.value = '';
         pathFilterInput.dispatchEvent(new Event('input'));
-        currentSearchResultsEls.forEach(el => el.style.display = '');
-        setSearchResLayout();
-        setPreviewZoneLayout();
+        //currentSearchResultsEls.forEach(el => el.style.display = '');
       } else {
         pathFilterInput.value = 'vocab';
         pathFilterInput.dispatchEvent(new Event('input'));
         //pathFilterInput.focus();
-        setSearchResLayout();
-        setPreviewZoneLayout();
+        //setSearchResLayout();
+        //setPreviewZoneLayout();
       }
     }
 
     pathFilterInput.addEventListener('input', () => {
+      console.log('search res filter input');
       if(pathFilterInput.value.trim().toLowerCase().length > 2) {
         currentSearchResultsEls.forEach(el => {
           el.style.display = el.dataset.filePath.toLowerCase().indexOf(pathFilterInput.value) >= 0 ? '' : 'none';
         })
+        searchResCount.textContent = currentSearchResultsEls.filter(el => el.style.display !== 'none').length;
       } else {
         currentSearchResultsEls.forEach(el => el.style.display = '');
+        searchResCount.textContent = currentSearchResultsEls.length;
       }
       setSearchResLayout();
       setPreviewZoneLayout();

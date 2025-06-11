@@ -189,8 +189,9 @@ public class FileIndexer {
             latestUpdate = new ProgressUpdate(resource.file.getName(), filesDone, totalFiles,
                     formatElapsed(System.currentTimeMillis() - startTime));
         }
+        progressCallback.accept("indexProgress", latestUpdate);
         handler.removeCallbacks(uiUpdater);
-        uiUpdater.run();
+        //uiUpdater.run();
 
         LogTimer orphans = new LogTimer(true);
         db.deleteOrphanTerms();
