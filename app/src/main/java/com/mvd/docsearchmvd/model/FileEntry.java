@@ -16,4 +16,6 @@ public class FileEntry {
     public String getPath() {
         return file.getAbsolutePath();
     }
+
+    public String getFileName() { return file.getName(); }
 }

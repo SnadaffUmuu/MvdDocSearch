@@ -250,7 +250,7 @@ public class WebAppInterface {
                             new StatusUpdate("\uD83D\uDD01 Reindex started (" + roots.size() + " root folders)")));
                     db.getConnection().beginTransaction();
                     startNotification("Updating");
-                    fileIndexer.updateIndex(rootPathsFromClient);
+                    fileIndexer.updateIndex(rootPathsFromClient, true);
 
                     db.getConnection().setTransactionSuccessful();
                     success = true;
@@ -309,7 +309,7 @@ public class WebAppInterface {
                 try {
                     db.getConnection().beginTransaction();
                     startNotification("Indexing");
-                    fileIndexer.updateIndex(folders);
+                    fileIndexer.updateIndex(folders, false);
 
                     db.getConnection().setTransactionSuccessful();
                     success = true;
@@ -411,7 +411,7 @@ public class WebAppInterface {
                     sendResultToJS(webView, new ApiResponse<>("statusUpdate",
                             new StatusUpdate("Tables cleared", clearTablesTimer.getElapsed())));
 
-                    fileIndexer.updateIndex(folders);
+                    fileIndexer.updateIndex(folders, false);
 
                     db.getConnection().setTransactionSuccessful();
                     success = true;

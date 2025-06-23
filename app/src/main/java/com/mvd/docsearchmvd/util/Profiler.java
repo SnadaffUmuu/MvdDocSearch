@@ -19,7 +19,6 @@ public class Profiler {
     public static void clear() {
         timers.clear();
     }
-
     public static String getTimers() {
         return String.valueOf(timers);
     }

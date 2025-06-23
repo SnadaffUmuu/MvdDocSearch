@@ -149,7 +149,7 @@ public class FileIndexer {
         }
     }
 
-    public void updateIndex(File[] rootPathsFromClient) throws IOException, SQLException {
+    public void updateIndex(File[] rootPathsFromClient, boolean listChanges) throws IOException, SQLException {
         LogTimer collecting = new LogTimer(true);
         List<FileEntry> allResources = collectAllResources(rootPathsFromClient);
         if (progressCallback != null) {
@@ -158,8 +158,14 @@ public class FileIndexer {
 
         Map<String, Integer> stats = new HashMap<>();
 
+        Map<String, List<String>> listStats = new HashMap<>();
+
         db.setStatCallback((type, num) -> {
             stats.merge(type, (Integer) num, Integer::sum);
+        });
+
+        db.setListStatCallback((type, string) -> {
+            listStats.computeIfAbsent(type, k -> new ArrayList<>()).add((String)string);
         });
         
         Set<String> pathsOfExistingResources = allResources.stream()
@@ -191,7 +197,6 @@ public class FileIndexer {
         }
         progressCallback.accept("indexProgress", latestUpdate);
         handler.removeCallbacks(uiUpdater);
-        //uiUpdater.run();
 
         LogTimer orphans = new LogTimer(true);
         db.deleteOrphanTerms();
@@ -200,6 +205,12 @@ public class FileIndexer {
         String message = "Indexing summary:";
         for(String metric : stats.keySet()) {
             message += "<br>- " + metric + ": " + stats.get(metric);
+            if (listChanges) {
+                List<String> list = listStats.get(metric);
+                if (list != null) {
+                    message += " (" + String.join(", ", list) + ")";
+                }
+            }
         }
         Log.d(WebAppInterface.TAG, "Profiler: " + Profiler.getTimers());
         message += "<br>- avg metadata time: " + Profiler.get("metadata").getAverage()

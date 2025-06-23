@@ -36,9 +36,14 @@ public class DatabaseManager {
     }
 
     private BiConsumer<String, Object> statCallback;
+    private BiConsumer<String, Object> listStatCallback;
 
     public void setStatCallback(BiConsumer<String, Object> callback) {
         this.statCallback = callback;
+    }
+
+    public void setListStatCallback(BiConsumer<String, Object> callback) {
+        this.listStatCallback = callback;
     }
 
     public DatabaseManager(Context context) {
@@ -172,6 +177,7 @@ public class DatabaseManager {
 //        }
 
         String filePath = entry.getPath();
+        String fileName = entry.getFileName();
         long fileSize = entry.size;
         long lastModified = entry.lastModified;
         Cursor cursor = db.rawQuery("SELECT size, last_modified FROM files WHERE path = ?", new String[]{filePath});
@@ -191,6 +197,9 @@ public class DatabaseManager {
                     stmt.executeUpdateDelete();
                     if (statCallback != null) {
                         statCallback.accept("updated", 1);
+                    }
+                    if (listStatCallback != null) {
+                        listStatCallback.accept("updated", fileName);
                     }
                     Profiler.get("metadata").record(System.currentTimeMillis() - start);
                     long contentStart = System.currentTimeMillis();
@@ -214,6 +223,9 @@ public class DatabaseManager {
                 stmt.executeInsert();
                 if (statCallback != null) {
                     statCallback.accept("added", 1);
+                }
+                if (listStatCallback != null) {
+                    listStatCallback.accept("added", fileName);
                 }
                 Profiler.get("metadata").record(System.currentTimeMillis() - start);
 
@@ -409,6 +421,12 @@ public class DatabaseManager {
                 for (String path : toDelete) {
                     db.delete("files", "path = ?", new String[]{path});
                     deleted++;
+                    if (statCallback != null) {
+                        statCallback.accept("deleted", 1);
+                    }
+                    if (listStatCallback != null) {
+                        listStatCallback.accept("deleted", new File(path).getName());
+                    }
                 }
 
             } finally {

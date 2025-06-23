@@ -37,18 +37,10 @@ public class LogTimer {
         return formatElapsed(getRecord());
     }
 
-//    public void logElapsed(String message) {
-//        Log.d(tag, message + " (" + formatElapsed(getRecord()) + ")");
-//    }
-
     private long getTotal () {
         long now = System.currentTimeMillis();
         return now - startTime;
     }
-
-//    public String getTotalElapsed () {
-//        return formatElapsed(getTotal());
-//    }
 
     public void logTotal(String message) {
         Log.d(tag, message + " (TOTAL: " + formatElapsed(getTotal()) + ")");
@@ -57,9 +49,6 @@ public class LogTimer {
     public void record(long elapsed) {
         accumulatedElapsed += elapsed;
         recordCount++;
-//        Log.d(WebAppInterface.TAG, "Profiler record \n-recordCount: " + recordCount
-//                + "\n-passed elapsed: " + elapsed
-//                + "\n-accumulatedElapsed: " + accumulatedElapsed);
     }
 
     public String getAverage() {

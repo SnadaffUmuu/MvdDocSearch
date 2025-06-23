@@ -28,7 +28,6 @@ public class TokenDictionary {
             return cache.get(token);
         }
 
-        // 1. Попробовать найти
         Cursor cursor = conn.rawQuery("SELECT id FROM dict WHERE token = ?", new String[]{token});
         if (cursor.moveToFirst()) {
             int id = cursor.getInt(0);
@@ -38,7 +37,6 @@ public class TokenDictionary {
         }
         cursor.close();
 
-        // 2. Вставить
         ContentValues values = new ContentValues();
         values.put("token", token);
         long rowId = conn.insert("dict", null, values);
@@ -46,7 +44,7 @@ public class TokenDictionary {
             throw new SQLiteException("Failed to insert token: " + token);
         }
 
-        int id = (int) rowId; // SQLite возвращает ROWID, совпадающий с id, если id INTEGER PRIMARY KEY
+        int id = (int) rowId;
         cache.put(token, id);
         return id;
     }
