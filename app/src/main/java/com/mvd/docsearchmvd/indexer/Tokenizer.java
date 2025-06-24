@@ -19,7 +19,7 @@ import com.mvd.docsearchmvd.util.Util;
 import android.util.Log;
 
 public class Tokenizer {
-    private static final Pattern PUNCTUATION_OR_SYMBOL = Pattern.compile( "[\\p{P}\\p{S}\\p{N}\\p{Z}\\p{C}ー々〆〤]");
+    private static final Pattern PUNCTUATION_OR_SYMBOL = Pattern.compile( "[\\p{P}\\p{S}\\p{N}\\p{Z}\\p{C}ー〆〤]");
     private static final Pattern EMOJI = Pattern.compile("[\\uD83C-\\uDBFF\\uDC00-\\uDFFF]+");
 
     public Tokenizer() {
