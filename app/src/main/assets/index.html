@@ -1130,6 +1130,7 @@
     });
 
     searchQuery.addEventListener('focus', () => {
+      searchQuery.value = '';
       showSuggestions(filterSuggestions(searchQuery.value));
     });
 
@@ -1965,13 +1966,9 @@
       if(!pathFilter.classList.contains('expanded')) {
         pathFilterInput.value = '';
         pathFilterInput.dispatchEvent(new Event('input'));
-        //currentSearchResultsEls.forEach(el => el.style.display = '');
       } else {
         pathFilterInput.value = 'vocab';
         pathFilterInput.dispatchEvent(new Event('input'));
-        //pathFilterInput.focus();
-        //setSearchResLayout();
-        //setPreviewZoneLayout();
       }
     }
 
